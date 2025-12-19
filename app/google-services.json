@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "315060591898",
+    "firebase_url": "https://studylinx-b3a1f-default-rtdb.firebaseio.com",
+    "project_id": "studylinx-b3a1f",
+    "storage_bucket": "studylinx-b3a1f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315060591898:android:eec48f80bf19b501fb60a3",
+        "android_client_info": {
+          "package_name": "com.example.studylinx"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6AsEaHRlNC5f9nwCGMRrCriwmU715PNA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
