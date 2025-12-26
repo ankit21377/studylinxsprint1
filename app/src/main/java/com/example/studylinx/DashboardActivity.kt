@@ -1,5 +1,7 @@
 package com.example.studylinx
 
+import com.example.studylinx.HomeScreen
+
 import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
