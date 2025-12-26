@@ -25,6 +25,48 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun ProfileScreen() {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Blue)
+        ) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(all = 30.dp)
+                        .fillMaxWidth()
+                        .background(Color.Blue),
+                    horizontalArrangement = Arrangement.End
+                ) {
 
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_edit_24),
+                            null,
+
+                            tint = Color.White
+
+                        )
+                }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.Blue),
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+
+
+                        Text(
+                            "My Profile", style = TextStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 30.sp,
+                                color = Color.White
+                            )
+                        )
+                    }
+
+
+            }
+
+        }
     }
 
