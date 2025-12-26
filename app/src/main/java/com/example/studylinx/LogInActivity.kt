@@ -1,5 +1,6 @@
 package com.example.studylinx
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -66,6 +69,7 @@ fun LoginBody(){
     var email by remember {mutableStateOf("")}
     var password by remember {mutableStateOf("")}
     var visibility by remember {mutableStateOf(false)}
+    val context = LocalContext.current
 
     Scaffold() { padding ->
         Column(
@@ -120,8 +124,7 @@ fun LoginBody(){
                             horizontalArrangement = Arrangement.spacedBy(8.dp), // More modern way to add space
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            1
-                            // --- First Name Fiel
+                            // --- First Name Field ---
 
                             // --- Last Name Field ---
 
@@ -226,14 +229,20 @@ fun LoginBody(){
                 horizontalArrangement = Arrangement.Center
 
             ){
-                Text(
-                    buildAnnotatedString {
-                        append("Don't have an account?")
-                        withStyle(style = SpanStyle(color = Blue)){
-                            append("Sign Up")
+                val annotatedString = buildAnnotatedString {
+                    append("Don't have an account? ")
+                    pushStringAnnotation(tag = "SignUp", annotation = "SignUp")
+                    withStyle(style = SpanStyle(color = Blue)) {
+                        append("Sign Up")
+                    }
+                    pop()
+                }
+                ClickableText(text = annotatedString, onClick = { offset ->
+                    annotatedString.getStringAnnotations(tag = "SignUp", start = offset, end = offset)
+                        .firstOrNull()?.let {
+                            context.startActivity(Intent(context, RegisterActivity::class.java))
                         }
-                    },
-                )
+                })
 
             }
 
@@ -243,4 +252,3 @@ fun LoginBody(){
     }
 
 }
-
