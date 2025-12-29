@@ -140,3 +140,29 @@ fun SearchScreen(){
 }
 
 /* -------------------- CATEGORY CARD -------------------- */
+@Composable
+fun CategoryCard(title: String) {
+    Card(
+        modifier = Modifier
+            .width(160.dp)
+            .height(120.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(Color(0xFFE8EBFF), CircleShape)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = title, fontSize = 14.sp)
+        }
+    }
+}
+
+
