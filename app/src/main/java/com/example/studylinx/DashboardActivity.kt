@@ -94,7 +94,8 @@ fun DashboardBody() {
                 2->NotificationScreen()
                 3-> ProfileScreen(
                     onBackClick = { activity.finish() },
-                    onEditClick = { /* Handle edit click */ }
+                    onEditClick = { /* Handle edit click */ },
+                    onProfileImageClick = { /* Handle profile image click */ }
                 )
                 else -> HomeScreen()
             }
