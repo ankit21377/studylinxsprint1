@@ -1,6 +1,7 @@
 package com.example.studylinx.repo
 
 import com.example.studylinx.model.UserModel
+import com.google.firebase.auth.FirebaseUser
 
 class UserRepoImpl : UserRepo{
     override fun login(
