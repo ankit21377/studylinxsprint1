@@ -2,6 +2,7 @@ package com.example.studylinx
 
 import android.R
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,8 +30,10 @@ fun ProfileScreen(
     onEditClick: () -> Unit
 ) {
     Scaffold(
+        contentWindowInsets = WindowInsets(0), // 🔴 CHANGE #1
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0), // 🔴 CHANGE #2
                 title = {
                     Text(
                         text = "My Profile",
@@ -50,7 +53,6 @@ fun ProfileScreen(
                 },
                 actions = {
                     IconButton(onClick = onEditClick) {
-                        // Using standard vector icon instead of R.drawable to avoid missing resource errors
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
@@ -59,7 +61,7 @@ fun ProfileScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = (Color(color = 0xFF2196F3)),
+                    containerColor = Color(0xFF2196F3),
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White,
                     actionIconContentColor = Color.White
@@ -75,10 +77,7 @@ fun ProfileScreen(
                 .background(Color.White)
         ) {
             item {
-                Text(
-                    text = "Profile Details go here",
-                    color = Color.Black,
-                    modifier = Modifier.padding(16.dp)
+               Icon()
                 )
             }
         }
