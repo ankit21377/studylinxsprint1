@@ -164,5 +164,35 @@ fun CategoryCard(title: String) {
         }
     }
 }
+/* -------------------- COUNTRY CARD -------------------- */
+@Composable
+fun CountryCard(country: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Color(0xFFE3F2FD), CircleShape)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = country,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
 
 
