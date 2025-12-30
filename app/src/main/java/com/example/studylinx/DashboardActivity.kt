@@ -97,8 +97,3 @@ fun DashboardBody() {
 
     }
 
-@Composable
-fun NotificationScreen() {
-
-}
-

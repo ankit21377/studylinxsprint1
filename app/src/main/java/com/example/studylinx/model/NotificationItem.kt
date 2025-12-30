@@ -1,9 +1,9 @@
 package com.example.studylinx.model
 
-annotation class NotificationItem {
-    val isRead: Boolean
-    val timeAgo: Any
-    val likeCount: String
-    val action: String
-    val userName: Any
-}
+data class NotificationItem(
+    val userName: String = "",
+    val action: String = "",
+    val timeAgo: String = "",
+    val likeCount: Int = 0,
+    val isRead: Boolean = false
+)
