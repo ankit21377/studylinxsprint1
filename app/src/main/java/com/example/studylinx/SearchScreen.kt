@@ -49,7 +49,7 @@ fun SearchScreen(){
                 .fillMaxWidth()
                 .height(160.dp)
                 .background(
-                    color = Color(0xFF5E6BF3),
+                    color = Color(0xFF67A1E4),
                     shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
                 ),
             contentAlignment = Alignment.Center
