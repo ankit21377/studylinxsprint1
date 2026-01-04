@@ -92,11 +92,7 @@ fun DashboardBody() {
                 0 -> HomeScreen()
                 1-> SearchScreen()
                 2->NotificationScreen()
-                3-> ProfileScreen(
-                    onBackClick = { activity.finish() },
-                    onEditClick = { /* Handle edit click */ },
-                    onProfileImageClick = { /* Handle profile image click */ }
-                )
+                3-> ProfileScreen()
                 else -> HomeScreen()
             }
 //            Text("Email: $email")
