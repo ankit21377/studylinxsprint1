@@ -13,28 +13,6 @@
         android:theme="@style/Theme.StudyLinX">
         <activity
             android:name=".DashboardActivity"
-            android:exported="true"
-            android:label="@string/title_activity_dashboard"
-            android:theme="@style/Theme.StudyLinX">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".LoginActivity"
-            android:exported="true"
-            android:label="@string/title_activity_log_in"
-            android:theme="@style/Theme.StudyLinX">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".HomeScreenActivity"
             android:exported="true">
 
             <intent-filter>
@@ -44,39 +22,32 @@
 
         </activity>
 
+
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:label="@string/title_activity_log_in"
+            android:theme="@style/Theme.StudyLinX" />
+        <activity
+            android:name=".HomeScreenActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".RegisterActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_register"
-            android:theme="@style/Theme.StudyLinX">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.StudyLinX" />
         <activity
             android:name=".SplashActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_splash"
-            android:theme="@style/Theme.StudyLinX">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+            android:theme="@style/Theme.StudyLinX" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:label="Studylinx"
-            android:theme="@style/Theme.StudyLinX">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
     </application>
 
 </manifest>
