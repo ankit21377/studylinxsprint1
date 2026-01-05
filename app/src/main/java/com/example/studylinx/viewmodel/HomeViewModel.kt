@@ -5,9 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.studylinx.data.repo.HomeRepo
-import com.example.studylinx.data.repo.HomeRepoImpl
 import com.example.studylinx.model.Event
 import com.example.studylinx.model.HomeSummary
+import com.example.studylinx.repo.HomeRepoImpl
 
 class HomeViewModel(
         private val repo: HomeRepo = HomeRepoImpl()

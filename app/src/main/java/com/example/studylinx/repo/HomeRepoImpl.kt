@@ -1,6 +1,7 @@
-package com.example.studylinx.data.repo
+package com.example.studylinx.repo
 
 
+import com.example.studylinx.data.repo.HomeRepo
 import com.example.studylinx.model.Event
 import com.example.studylinx.model.HomeSummary
 import com.google.firebase.firestore.FirebaseFirestore
