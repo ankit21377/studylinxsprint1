@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -28,7 +29,7 @@ private enum class NotificationTab { ALL, UNREAD, READ }
 
 @Composable
 fun NotificationScreen(
-    vm: NotificationViewModel = viewmodel(),
+    vm: NotificationViewModel = viewModel(),
 
     loadForCurrentUser: Boolean = false
 ) {
