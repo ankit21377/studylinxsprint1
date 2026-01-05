@@ -7,5 +7,13 @@ data class UserModel(
     val email:String = "",
     val password: String ="",
 ){
+    fun toMap() : Map<String,Any?>{
+        return mapOf(
+            "userId" to userId,
+            "firstName" to firstname,
+            "lastName" to lastname,
+            "email" to email,
+        )
+    }
 
 }
