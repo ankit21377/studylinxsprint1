@@ -331,3 +331,25 @@ private fun NotificationCard(
                     append(msg)
                     // In your screenshot, only one line message. Keep it clean.
                 },
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF1B2430),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+
+
+            if (!item.isRead) {
+                Spacer(Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(primaryBlue)
+                        .border(1.dp, Color(0xFF3E6FBF), CircleShape)
+                )
+            }
+        }
+    }
+}
