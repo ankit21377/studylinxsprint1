@@ -14,9 +14,11 @@ foundation = "1.10.0"
 firebaseBom = "33.1.2"
 firebaseDatabaseKtx = "22.0.1"
 firebaseStorageKtx = "22.0.1"
+material3 = "1.4.0"
 
 [libraries]
 
+androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -37,6 +39,7 @@ firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 firebase-database-ktx = { group = "com.google.firebase", name = "firebase-database", version = "unspecified" }
 firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
