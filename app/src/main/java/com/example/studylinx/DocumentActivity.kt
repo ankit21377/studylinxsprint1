@@ -68,6 +68,7 @@ private enum class DocType(val key: String, val label: String) {
     FINANCIAL("financial", "Financial Statement")
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DocumentScreen(
     onBack: () -> Unit,
@@ -261,4 +262,84 @@ private fun DocumentUploadContent(
         }
     }
 }
+@Composable
+private fun DocRow(
+    title: String,
+    icon: @Composable () -> Unit,
+    fileName: String,
+    percent: Int?,
+    onUpload: () -> Unit,
+    blue: Color,
+    softBlue: Color,
+    textDark: Color,
+    textMuted: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .border(1.dp, Color(0xFFE5EEFF), RoundedCornerShape(16.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(softBlue),
+            contentAlignment = Alignment.Center
+        ) { icon() }
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = textDark,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = fileName,
+                color = textMuted,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (percent != null && percent in 0..99) {
+                Spacer(Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = percent / 100f,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(99.dp))
+                )
+            }
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        Button(
+            onClick = onUpload,
+            modifier = Modifier
+                .height(38.dp)
+                .width(92.dp),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = blue)
+        ) {
+            Text(
+                text = "Upload",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp
+            )
+        }
+    }
+}
+
 
