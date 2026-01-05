@@ -1,6 +1,8 @@
 package com.example.studylinx
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -47,6 +51,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.studylinx.model.UserModel
+import com.example.studylinx.repo.UserRepoImpl
+import com.example.studylinx.viewmodel.UserViewModel
 
 class RegisterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,15 +67,21 @@ class RegisterActivity : ComponentActivity() {
 
 @Composable
 fun RegisterBody(){
+    var userViewModel = remember { UserViewModel(UserRepoImpl()) }
     var firstname by remember {mutableStateOf("")}
     var lastname by remember {mutableStateOf("")}
     var email by remember {mutableStateOf("")}
     var password by remember {mutableStateOf("")}
     var visibility by remember {mutableStateOf(false)}
     var confirm by remember {mutableStateOf("")}
+    val context = LocalContext.current
+    val activity = context as RegisterActivity
+    val terms = true
+
     Scaffold { padding ->
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
                 .padding(paddingValues = padding)
                 .background(White)
         ) {
@@ -271,7 +284,44 @@ fun RegisterBody(){
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                        if (!terms) {
+                            Toast.makeText(context, "Please agree to terms & conditions", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (password != confirm) {
+                            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (email.isBlank() || password.isBlank()) {
+                            Toast.makeText(context, "Email and password required", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        // call ViewModel instance functions
+                        userViewModel.register(email, password) { success, message, userId ->
+                            if (success && userId != null) {
+                                val model = UserModel(
+                                    userId = userId,
+                                    firstname = firstname,
+                                    lastname = lastname,
+                                    email = email,
+                                    password = password
+                                )
+
+                                userViewModel.addUserToDatabase(userId, model) { ok, msg ->
+                                    if (ok) {
+                                        Toast.makeText(context, msg ?: "Registered successfully", Toast.LENGTH_SHORT).show()
+                                        activity.finish()
+                                    } else {
+                                        Toast.makeText(context, msg ?: "Failed to save user", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } else {
+                                Toast.makeText(context, message ?: "Registration failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Blue
                     ),
@@ -279,7 +329,9 @@ fun RegisterBody(){
                         defaultElevation = 6.dp
                     ),
                     shape = RoundedCornerShape(25.dp),
-                    modifier = Modifier.fillMaxWidth().height(100.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
                         .padding(horizontal = 40.dp, vertical = 20.dp),
                 ) { Text("Sign Up") }
             }
