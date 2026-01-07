@@ -33,9 +33,15 @@
         </activity>
         <activity
             android:name=".LoginActivity"
-            android:exported="false"
-            android:label="@string/title_activity_log_in"
-            android:theme="@style/Theme.StudyLinX" />
+            android:exported="true">
+
+            <!-- This makes it the launcher activity -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".HomeScreenActivity"
             android:exported="true">
