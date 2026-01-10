@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -89,10 +90,17 @@ fun RegisterBody(){
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.baseline_arrow_back_ios_24),
-                    contentDescription = null,
-                )
+                IconButton(onClick = {
+                    val intent = Intent(context, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                    context.startActivity(intent)
+                    activity.finish()
+                }) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_arrow_back_ios_24),
+                        contentDescription = "Back to Login",
+                    )
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -312,6 +320,10 @@ fun RegisterBody(){
                                 userViewModel.addUserToDatabase(userId, model) { ok, msg ->
                                     if (ok) {
                                         Toast.makeText(context, msg ?: "Registered successfully", Toast.LENGTH_SHORT).show()
+
+                                        val intent = Intent(context, LoginActivity::class.java)
+                                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                                        context.startActivity(intent)
                                         activity.finish()
                                     } else {
                                         Toast.makeText(context, msg ?: "Failed to save user", Toast.LENGTH_SHORT).show()
@@ -342,14 +354,20 @@ fun RegisterBody(){
                 horizontalArrangement = Arrangement.Center
 
             ){
-                Text(
-                    buildAnnotatedString {
-                        append("Already have an account?")
-                        withStyle(style = SpanStyle(color = Blue)){
-                            append(" Sign In")
+                val annotatedString = buildAnnotatedString {
+                    append("have an account? ")
+                    pushStringAnnotation(tag = "SignIn", annotation = "SignIn")
+                    withStyle(style = SpanStyle(color = Blue)) {
+                        append("Sign In")
+                    }
+                    pop()
+                }
+                ClickableText(text = annotatedString, onClick = { offset ->
+                    annotatedString.getStringAnnotations(tag = "SignIn", start = offset, end = offset)
+                        .firstOrNull()?.let {
+                            context.startActivity(Intent(context, LoginActivity::class.java))
                         }
-                    },
-                )
+                })
 
             }
 
