@@ -33,26 +33,17 @@
         </activity>
         <activity
             android:name=".LoginActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/title_activity_log_in"
             android:theme="@style/Theme.StudyLinX" />
         <activity
-            android:name=".HomeScreenActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
             android:name=".RegisterActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/title_activity_register"
             android:theme="@style/Theme.StudyLinX" />
         <activity
             android:name=".SplashActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/title_activity_splash"
             android:theme="@style/Theme.StudyLinX" />
     </application>
