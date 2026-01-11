@@ -1,0 +1,4 @@
+toml
+# Remove "-ktx" and remove the specific version reference
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
+    
