@@ -15,6 +15,7 @@ firebaseBom = "33.1.2"
 firebaseDatabaseKtx = "22.0.1"
 firebaseStorageKtx = "22.0.1"
 material3 = "1.4.0"
+desugar_jdk_libs = "2.1.4"
 
 [libraries]
 
@@ -40,10 +41,10 @@ androidx-compose-foundation = { group = "androidx.compose.foundation", name = "f
 firebase-database-ktx = { group = "com.google.firebase", name = "firebase-database", version = "unspecified" }
 firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
-

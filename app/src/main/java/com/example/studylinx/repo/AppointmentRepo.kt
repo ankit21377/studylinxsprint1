@@ -3,7 +3,7 @@ package com.example.studylinx.repo
 import com.example.studylinx.model.Appointment
 import kotlinx.coroutines.flow.Flow
 
-interface AppointmentRepository {
+interface AppointmentRepo {
     fun streamAppointmentsInRange(
         userId: String,
         startMillisInclusive: Long,
