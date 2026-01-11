@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.studylinx"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.studylinx"
@@ -31,6 +29,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -43,6 +42,8 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
