@@ -1,4 +1,4 @@
-package com.example.studylinx.viewmodel
+package com.example.studylinx.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,10 +10,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.*
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 enum class AppointmentFilter { ALL, UPCOMING, PAST }
 
-data class AppointmentUiState(
+data class AppointmentsUiState(
     val userId: String = "",
     val month: YearMonth = YearMonth.now(),
     val selectedDate: LocalDate = LocalDate.now(),
@@ -23,13 +24,13 @@ data class AppointmentUiState(
     val loading: Boolean = true
 )
 
-class AppointmentViewModel(
+class AppointmentsViewModel(
     private val repo: AppointmentRepo,
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : ViewModel() {
 
-    private val _ui = MutableStateFlow(AppointmentUiState())
-    val ui: StateFlow<AppointmentUiState> = _ui
+    private val _ui = MutableStateFlow(AppointmentsUiState())
+    val ui: StateFlow<AppointmentsUiState> = _ui
 
     private var streamJob: Job? = null
 

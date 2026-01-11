@@ -7,5 +7,8 @@ data class Appointment(
     val startMillis: Long = 0L,
     val endMillis: Long = 0L,
     val createdAt: Long = 0L,
-    val updatedAt: Long = 0L
+    val updatedAt: Long = 0L,
+    val counselorName: String = "", // Add this line
+    val status: String = "Pending",
+    val dateTimeMillis: Long = 0L
 )
