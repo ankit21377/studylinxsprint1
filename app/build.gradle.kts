@@ -67,9 +67,12 @@ dependencies {
 
     // Coroutines Tasks
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.protolite.well.known.types)
+    implementation(libs.androidx.ui)
     implementation(libs.androidx.material3)
 
-    // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -77,4 +80,5 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
 }
