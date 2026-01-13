@@ -6,4 +6,6 @@
     <string name="title_activity_dashboard">DashboardActivity</string>
     <string name="title_activity_document">DocumentActivity</string>
     <string name="title_activity_appointment">AppointmentActivity</string>
+    <string name="title_activity_university">UniversityActivity</string>
+    <string name="title_activity_admin_university">AdminUniversityActivity</string>
 </resources>
