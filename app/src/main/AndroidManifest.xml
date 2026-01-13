@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+
     xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -11,6 +13,39 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyLinX">
+        <activity
+            android:name=".AdminUniversityActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_university"
+            android:theme="@style/Theme.StudyLinX">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".UniversityActivity"
+            android:exported="true"
+            android:label="@string/title_activity_university"
+            android:theme="@style/Theme.StudyLinX">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".AppointmentActivity"
+            android:exported="true"
+            android:label="@string/title_activity_appointment"
+            android:theme="@style/Theme.StudyLinX">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".DocumentActivity"
             android:exported="true"
@@ -33,26 +68,17 @@
         </activity>
         <activity
             android:name=".LoginActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/title_activity_log_in"
             android:theme="@style/Theme.StudyLinX" />
         <activity
-            android:name=".HomeScreenActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
             android:name=".RegisterActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/title_activity_register"
             android:theme="@style/Theme.StudyLinX" />
         <activity
             android:name=".SplashActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/title_activity_splash"
             android:theme="@style/Theme.StudyLinX" />
     </application>

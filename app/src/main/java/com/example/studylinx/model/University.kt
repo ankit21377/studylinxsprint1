@@ -6,5 +6,6 @@ data class University(
     val city: String = "",
     val country: String = "",
     val description: String = "",
-    val imageUrl: String = ""
+    val imageUrl: String = "",
+    val locationUrl: String = ""
 )

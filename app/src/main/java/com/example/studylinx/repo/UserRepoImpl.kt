@@ -1,20 +1,7 @@
 package com.example.studylinx.repo
 
 import com.example.studylinx.model.UserModel
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.*
-import com.google.firebase.database.DatabaseReference
-
-
-
-class UserRepoImpl : UserRepo {
-    val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    val database: FirebaseDatabase = FirebaseDatabase.getInstance()
-
-    val ref: DatabaseReference = database.getReference("users")
 
     override fun login(
         email: String,
