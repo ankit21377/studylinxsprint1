@@ -25,8 +25,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.studylinx.model.Appointment
 import com.example.studylinx.repo.AppointmentRepoImpl
-import com.example.studylinx.ui.viewmodel.AppointmentFilter
-import com.example.studylinx.ui.viewmodel.AppointmentsViewModel
+import com.example.studylinx.viewmodel.AppointmentFilter
+import com.example.studylinx.viewmodel.AppointmentViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
 import java.time.*
@@ -41,12 +41,12 @@ class AppointmentActivity : ComponentActivity() {
         setContent {
             Surface(color = MaterialTheme.colorScheme.background) {
 
-                val vm: AppointmentsViewModel = viewModel(
+                val vm: AppointmentViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             val repo = AppointmentRepoImpl()
                             @Suppress("UNCHECKED_CAST")
-                            return AppointmentsViewModel(repo) as T
+                            return AppointmentViewModel(repo) as T
                         }
                     }
                 )
@@ -70,7 +70,7 @@ class AppointmentActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun UserAppointmentsUI(
-        vm: AppointmentsViewModel,
+        vm: AppointmentViewModel,
         onBack: () -> Unit
     ) {
         val state by vm.ui.collectAsState()

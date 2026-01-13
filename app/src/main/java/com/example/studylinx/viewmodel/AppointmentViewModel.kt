@@ -1,4 +1,4 @@
-package com.example.studylinx.ui.viewmodel
+package com.example.studylinx.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -24,7 +24,7 @@ data class AppointmentsUiState(
     val loading: Boolean = true
 )
 
-class AppointmentsViewModel(
+class AppointmentViewModel(
     private val repo: AppointmentRepo,
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) : ViewModel() {
