@@ -1,3 +1,7 @@
+// =====================================
+// 0) Add Admin flag to UserModel
+// File: com/example/studylinx/model/UserModel.kt
+// =====================================
 package com.example.studylinx.model
 
 data class UserModel(
@@ -6,22 +10,19 @@ data class UserModel(
     val lastname: String = "",
     val email: String = "",
     val password: String = "",
-    val profileImageUrl: String = ""
+    val profileImageUrl: String = "",
+    val isAdmin: Boolean = false // ✅ role-based access
 ) {
+    fun fullName(): String = "$firstname $lastname".trim()
 
-    fun fullName(): String {
-        return "$firstname $lastname".trim()
-    }
-
-    fun toMap(): Map<String, Any?> {
-        return mapOf(
-            "userId" to userId,
-            "firstName" to firstname,
-            "lastName" to lastname,
-            "email" to email,
-            "profileImageUrl" to profileImageUrl
-        )
-    }
+    fun toMap(): Map<String, Any?> = mapOf(
+        "userId" to userId,
+        "firstName" to firstname,
+        "lastName" to lastname,
+        "email" to email,
+        "profileImageUrl" to profileImageUrl,
+        "isAdmin" to isAdmin
+    )
 
     companion object {
         fun fromMap(map: Map<String, Any?>): UserModel {
@@ -31,7 +32,8 @@ data class UserModel(
                 lastname = map["lastName"] as? String ?: "",
                 email = map["email"] as? String ?: "",
                 password = "",
-                profileImageUrl = map["profileImageUrl"] as? String ?: ""
+                profileImageUrl = map["profileImageUrl"] as? String ?: "",
+                isAdmin = map["isAdmin"] as? Boolean ?: false
             )
         }
     }

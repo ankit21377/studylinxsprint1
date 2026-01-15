@@ -1,6 +1,5 @@
 package com.example.studylinx
 
-import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,9 +18,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 
+// ✅ Move this OUTSIDE composable
+data class NavItem(val icon: Int, val label: String)
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,65 +35,48 @@ class DashboardActivity : ComponentActivity() {
 
 @Composable
 fun DashboardBody() {
-    val context = LocalContext.current
-    val activity = context as Activity
-    data class NavItem(val icon: Int, val label: String)
 
     val listItems = listOf(
         NavItem(icon = R.drawable.baseline_home_24, label = "Home"),
         NavItem(icon = R.drawable.baseline_search_24, label = "Search"),
-        NavItem( icon = R.drawable.baseline_notifications_24, label = "Notification"),
-        NavItem( icon = R.drawable.baseline_person_24, label = "Profile"),
+        NavItem(icon = R.drawable.baseline_notifications_24, label = "Notification"),
+        NavItem(icon = R.drawable.baseline_person_24, label = "Profile"),
     )
 
     var selectedIndex by remember { mutableStateOf(0) }
 
-
-
-//    val email = activity.intent.getStringExtra("email")
-//    val password = activity.intent.getStringExtra("password")
-
     Scaffold(
         bottomBar = {
             NavigationBar {
-                listItems.forEachIndexed {index,item->
+                listItems.forEachIndexed { index, item ->
                     NavigationBarItem(
                         icon = {
                             Icon(
                                 painter = painterResource(item.icon),
-                                contentDescription = null
+                                contentDescription = item.label
                             )
                         },
-                        label = {
-                            Text(item.label)
-                        },
-                        onClick = {
-                            selectedIndex = index
-                        },
-                        selected = selectedIndex == index
+                        label = { Text(item.label) },
+                        selected = selectedIndex == index,
+                        onClick = { selectedIndex = index }
                     )
                 }
             }
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when(selectedIndex){
+            when (selectedIndex) {
                 0 -> HomeScreen()
-                1-> SearchScreen()
-                2->NotificationScreen()
-                3-> ProfileScreen()
+                1 -> SearchScreen()
+                2 -> NotificationScreen()
+                3 -> ProfileScreen()
                 else -> HomeScreen()
             }
-//            Text("Email: $email")
-//            Text("Password: $password")
         }
     }
-
-
-
-    }
-
+}
