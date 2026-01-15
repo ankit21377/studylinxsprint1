@@ -14,6 +14,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyLinX">
         <activity
+            android:name=".CoursesActivity"
+            android:exported="true"
+            android:label="@string/title_activity_courses"
+            android:theme="@style/Theme.StudyLinX">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".StartActivity"
             android:exported="true"
             android:label="@string/title_activity_start"
