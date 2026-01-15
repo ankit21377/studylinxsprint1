@@ -29,6 +29,7 @@ class CoursesActivity : ComponentActivity() {
 
     private val vm by viewModels<CoursesViewModel>()
 
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

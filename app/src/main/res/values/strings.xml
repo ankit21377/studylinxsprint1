@@ -10,4 +10,5 @@
     <string name="title_activity_admin_university">AdminUniversityActivity</string>
     <string name="title_activity_start">StartActivity</string>
     <string name="title_activity_courses">CoursesActivity</string>
+    <string name="title_activity_universities_by_course">UniversitiesByCourseActivity</string>
 </resources>
