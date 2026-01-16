@@ -3,19 +3,15 @@ package com.example.studylinx.repo
 import com.example.studylinx.model.UserModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.*
-import com.google.firebase.database.DatabaseReference
-
-
 
 class UserRepoImpl : UserRepo {
-    val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    val database: FirebaseDatabase = FirebaseDatabase.getInstance()
 
-    val ref: DatabaseReference = database.getReference("users")
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val ref: DatabaseReference =
+        FirebaseDatabase.getInstance().getReference("Users")
 
+    // ---------------- LOGIN ----------------
     override fun login(
         email: String,
         password: String,
@@ -26,11 +22,12 @@ class UserRepoImpl : UserRepo {
                 if (it.isSuccessful) {
                     callback(true, "Login successfully")
                 } else {
-                    callback(false, "${it.exception?.message}")
+                    callback(false, it.exception?.message ?: "Login failed")
                 }
             }
     }
 
+    // ---------------- FORGOT PASSWORD ----------------
     override fun forgetpassword(
         email: String,
         callback: (Boolean, String) -> Unit
@@ -40,12 +37,45 @@ class UserRepoImpl : UserRepo {
                 if (it.isSuccessful) {
                     callback(true, "Reset link sent to $email")
                 } else {
-                    callback(false, "${it.exception?.message}")
+                    callback(false, it.exception?.message ?: "Failed to send reset link")
                 }
             }
     }
 
+    // ---------------- REGISTER ----------------
+    override fun register(
+        email: String,
+        password: String,
+        callback: (Boolean, String, String) -> Unit
+    ) {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    val uid = auth.currentUser?.uid ?: ""
+                    callback(true, "Registration success", uid)
+                } else {
+                    callback(false, it.exception?.message ?: "Registration failed", "")
+                }
+            }
+    }
 
+    // ---------------- ADD USER TO DATABASE ----------------
+    override fun addUserToDatabase(
+        userId: String,
+        model: UserModel,
+        callback: (Boolean, String) -> Unit
+    ) {
+        ref.child(userId).setValue(model)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    callback(true, "User added successfully")
+                } else {
+                    callback(false, it.exception?.message ?: "Failed to save user")
+                }
+            }
+    }
+
+    // ---------------- UPDATE PROFILE ----------------
     override fun updateProfile(
         userId: String,
         model: UserModel,
@@ -56,49 +86,56 @@ class UserRepoImpl : UserRepo {
                 if (it.isSuccessful) {
                     callback(true, "Profile updated successfully")
                 } else {
-                    callback(false, "${it.exception?.message}")
+                    callback(false, it.exception?.message ?: "Update failed")
                 }
             }
     }
 
+    // ---------------- GET CURRENT USER ----------------
     override fun getCurrentUser(): FirebaseUser? {
         return auth.currentUser
     }
 
+    // ---------------- DELETE PROFILE ----------------
     override fun deleteProfile(
         userId: String,
         callback: (Boolean, String) -> Unit
     ) {
-        ref.child(userId).removeValue().addOnCompleteListener {
-            if (it.isSuccessful) {
-                callback(true, "Account deleted")
-            } else {
-                callback(false, "${it.exception?.message}")
+        ref.child(userId).removeValue()
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    auth.currentUser?.delete()
+                    callback(true, "Account deleted")
+                } else {
+                    callback(false, it.exception?.message ?: "Delete failed")
+                }
             }
-        }
     }
 
+    // ---------------- LOGOUT ----------------
     override fun logout(callback: (Boolean, String) -> Unit) {
         try {
             auth.signOut()
-            callback(true, "Logout")
+            callback(true, "Logout successful")
         } catch (e: Exception) {
-            callback(false, e.message.toString())
+            callback(false, e.message ?: "Logout failed")
         }
     }
 
+    // ---------------- GET USER BY ID ----------------
     override fun getUserById(
         userId: String,
         callback: (Boolean, String, UserModel?) -> Unit
     ) {
         ref.child(userId)
-            .addValueEventListener(object : ValueEventListener {
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
-                        val users = snapshot.getValue(UserModel::class.java)
-                        if (users != null) {
-                            callback(true, "profile fetched", users)
-                        }
+                        val user = snapshot.getValue(UserModel::class.java)
+                        callback(true, "Profile fetched", user)
+                    } else {
+                        callback(false, "User not found", null)
                     }
                 }
 
@@ -108,20 +145,23 @@ class UserRepoImpl : UserRepo {
             })
     }
 
-    override fun getAllUser(callback: (Boolean, String, List<UserModel>?) -> Unit) {
-        ref.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    val allUsers = mutableListOf<UserModel>()
+    // ---------------- GET ALL USERS ----------------
+    override fun getAllUser(
+        callback: (Boolean, String, List<UserModel>?) -> Unit
+    ) {
+        ref.addListenerForSingleValueEvent(object : ValueEventListener {
 
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val allUsers = mutableListOf<UserModel>()
+
+                if (snapshot.exists()) {
                     for (data in snapshot.children) {
                         val user = data.getValue(UserModel::class.java)
-                        if (user != null) {
-                            allUsers.add(user)
-                        }
+                        if (user != null) allUsers.add(user)
                     }
-                    callback(true, "User fetched", allUsers)
                 }
+
+                callback(true, "Users fetched", allUsers)
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -129,37 +169,4 @@ class UserRepoImpl : UserRepo {
             }
         })
     }
-
-    override fun register(
-        email: String,
-        password: String,
-        callback: (Boolean, String, String) -> Unit
-    ) {
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    callback(true, "Registration success", "${auth.currentUser?.uid}")
-                } else {
-                    callback(false, "${it.exception?.message}", "")
-                }
-            }
-    }
-
-    override fun addUserToDatabase(
-        userId: String,
-        model: UserModel,
-        callback: (Boolean, String) -> Unit
-    ) {
-        ref.child(userId).setValue(model).addOnCompleteListener {
-            if (it.isSuccessful) {
-                callback(true, "Registration success")
-            } else {
-                callback(false, "${it.exception?.message}")
-            }
-        }
-    }
 }
-
-    //create -> setValue()
-    //Update -> updateChildren()
-    //delete -> removeValue()
