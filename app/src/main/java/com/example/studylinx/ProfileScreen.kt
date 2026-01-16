@@ -150,7 +150,7 @@ fun ProfileScreen(
                 title = "Settings",
                 icon = Icons.Default.Settings
             ) {
-//                context.startActivity(Intent(context, SettingsActivity::class.java))
+                context.startActivity(Intent(context, SettingsActivity::class.java))
             }
 
             ProfileMenuCard(
