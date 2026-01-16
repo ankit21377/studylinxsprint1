@@ -33,7 +33,7 @@ import coil.compose.AsyncImage
 import com.example.studylinx.model.University
 import com.example.studylinx.viewmodel.AdminUniversityViewModel
 
-class AdminUniversitiesActivity : ComponentActivity() {
+class AdminUniversityActivity : ComponentActivity() {
 
     private val vm by viewModels<AdminUniversityViewModel>()
 
