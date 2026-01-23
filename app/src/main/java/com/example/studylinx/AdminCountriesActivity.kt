@@ -1,9 +1,5 @@
-// ============================================================
-// ✅ 6) AdminCountriesActivity (Realtime DB CRUD UI)
-// - Has explicit SAVE button (no "direct saving...")
-// File: com/example/studylinx/admin/AdminCountriesActivity.kt
-// ============================================================
-package com.example.studylinx.admin
+
+package com.example.studylinx
 
 import android.os.Bundle
 import android.widget.Toast
