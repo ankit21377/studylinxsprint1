@@ -20,8 +20,6 @@ data class UserModel(
 ) {
     fun fullName(): String = "$firstname $lastname".trim()
 
-    fun fullName(): String = "$firstname $lastname".trim()
-
     // ✅ KEEP your existing keys to avoid breaking other screens
     fun toMap(): Map<String, Any?> {
         return mapOf(
