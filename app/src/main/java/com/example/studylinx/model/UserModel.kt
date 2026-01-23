@@ -1,3 +1,7 @@
+// =====================================
+// 0) Add Admin flag to UserModel
+// File: com/example/studylinx/model/UserModel.kt
+// =====================================
 package com.example.studylinx.model
 
 data class UserModel(
@@ -14,6 +18,7 @@ data class UserModel(
     val address: String = "",
     val interestedCourseOrCountry: String = ""
 ) {
+    fun fullName(): String = "$firstname $lastname".trim()
 
     fun fullName(): String = "$firstname $lastname".trim()
 
