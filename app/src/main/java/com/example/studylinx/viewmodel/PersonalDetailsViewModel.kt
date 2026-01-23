@@ -4,134 +4,124 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.studylinx.model.UserModel
 import com.example.studylinx.repo.UserRepo
-import com.google.firebase.storage.FirebaseStorage
-import java.util.UUID
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 data class PersonalDetailsUiState(
-    val loading: Boolean = true,
+    val loading: Boolean = false,
     val saving: Boolean = false,
-    val message: String? = null,
-    val user: UserModel = UserModel(),
-    val pickedImageUri: Uri? = null
+    val error: String? = null,
+    val success: String? = null,
+
+    val fullName: String = "",
+    val email: String = "",
+    val phone: String = "",
+    val dob: String = "",
+    val address: String = "",
+    val interested: String = "",
+
+    val profileImageUrl: String = "",
+    val localImageUri: Uri? = null
 )
 
 class PersonalDetailsViewModel(
     private val repo: UserRepo
 ) : ViewModel() {
 
-    var state: PersonalDetailsUiState = PersonalDetailsUiState()
-        private set
-
-    private fun updateState(newState: PersonalDetailsUiState, emit: (PersonalDetailsUiState) -> Unit) {
-        state = newState
-        emit(state)
-    }
+    private val _ui = MutableStateFlow(PersonalDetailsUiState())
+    val ui: StateFlow<PersonalDetailsUiState> = _ui
 
     private fun uid(): String = repo.getCurrentUser()?.uid.orEmpty()
 
-    fun loadUser(emit: (PersonalDetailsUiState) -> Unit) {
-        val id = uid()
-        if (id.isBlank()) {
-            updateState(state.copy(loading = false, message = "User not logged in"), emit)
+    fun loadMe() {
+        val userId = uid()
+        if (userId.isBlank()) {
+            _ui.value = _ui.value.copy(error = "Not logged in")
             return
         }
 
-        updateState(state.copy(loading = true, message = null), emit)
+        _ui.value = _ui.value.copy(loading = true, error = null, success = null)
 
-        repo.getUserById(id) { ok, msg, user ->
-            if (ok && user != null) {
-                updateState(state.copy(loading = false, user = user, message = null), emit)
+        repo.getUserById(userId) { ok, msg, user ->
+            if (!ok || user == null) {
+                _ui.value = _ui.value.copy(loading = false, error = msg)
+                return@getUserById
+            }
+
+            _ui.value = _ui.value.copy(
+                loading = false,
+                error = null,
+                fullName = user.fullName(),
+                email = user.email,
+                phone = user.phoneNumber,
+                dob = user.dateOfBirth,
+                address = user.address,
+                interested = user.interestedCourseOrCountry,
+                profileImageUrl = user.profileImageUrl
+            )
+        }
+    }
+
+    fun setFullName(v: String) = update { it.copy(fullName = v) }
+    fun setEmail(v: String) = update { it.copy(email = v) }
+    fun setPhone(v: String) = update { it.copy(phone = v) }
+    fun setDob(v: String) = update { it.copy(dob = v) }
+    fun setAddress(v: String) = update { it.copy(address = v) }
+    fun setInterested(v: String) = update { it.copy(interested = v) }
+
+    fun setLocalImage(uri: Uri?) {
+        update { it.copy(localImageUri = uri, success = null, error = null) }
+    }
+
+    fun saveDetails() {
+        val userId = uid()
+        if (userId.isBlank()) {
+            update { it.copy(error = "Not logged in") }
+            return
+        }
+
+        val s = _ui.value
+        if (s.fullName.trim().isBlank()) { update { it.copy(error = "Full name required") }; return }
+        if (s.email.trim().isBlank()) { update { it.copy(error = "Email required") }; return }
+
+        update { it.copy(saving = true, error = null, success = null) }
+
+        // If user picked a new image -> upload it first, then save details with URL
+        val picked = s.localImageUri
+        if (picked != null) {
+            repo.uploadProfileImage(userId, picked) { ok, msg, url ->
+                if (!ok || url.isNullOrBlank()) {
+                    update { it.copy(saving = false, error = msg) }
+                    return@uploadProfileImage
+                }
+                saveToDbWithUrl(userId, url)
+            }
+        } else {
+            saveToDbWithUrl(userId, s.profileImageUrl)
+        }
+    }
+
+    private fun saveToDbWithUrl(userId: String, imageUrl: String) {
+        val s = _ui.value
+        repo.savePersonalDetails(
+            userId = userId,
+            fullName = s.fullName,
+            email = s.email,
+            phone = s.phone,
+            dob = s.dob,
+            address = s.address,
+            interested = s.interested,
+            profileImageUrl = imageUrl
+        ) { ok, msg ->
+            if (ok) {
+                update { it.copy(saving = false, success = msg, profileImageUrl = imageUrl) }
             } else {
-                updateState(state.copy(loading = false, message = msg.ifBlank { "Failed to load user" }), emit)
+                update { it.copy(saving = false, error = msg) }
             }
         }
     }
 
-    fun setPickedImage(uri: Uri?, emit: (PersonalDetailsUiState) -> Unit) {
-        updateState(state.copy(pickedImageUri = uri), emit)
-    }
-
-    // Field setters (update inside UserModel)
-    fun setFirstName(v: String, emit: (PersonalDetailsUiState) -> Unit) =
-        updateState(state.copy(user = state.user.copy(firstname = v)), emit)
-
-    fun setLastName(v: String, emit: (PersonalDetailsUiState) -> Unit) =
-        updateState(state.copy(user = state.user.copy(lastname = v)), emit)
-
-    fun setEmail(v: String, emit: (PersonalDetailsUiState) -> Unit) =
-        updateState(state.copy(user = state.user.copy(email = v)), emit)
-
-    fun setPhone(v: String, emit: (PersonalDetailsUiState) -> Unit) =
-        updateState(state.copy(user = state.user.copy(phoneNumber = v)), emit)
-
-    fun setDob(v: String, emit: (PersonalDetailsUiState) -> Unit) =
-        updateState(state.copy(user = state.user.copy(dateOfBirth = v)), emit)
-
-    fun setAddress(v: String, emit: (PersonalDetailsUiState) -> Unit) =
-        updateState(state.copy(user = state.user.copy(address = v)), emit)
-
-    fun setInterested(v: String, emit: (PersonalDetailsUiState) -> Unit) =
-        updateState(state.copy(user = state.user.copy(interestedCourseOrCountry = v)), emit)
-
-    fun clearMessage(emit: (PersonalDetailsUiState) -> Unit) =
-        updateState(state.copy(message = null), emit)
-
-    fun saveDetails(emit: (PersonalDetailsUiState) -> Unit) {
-        val id = uid()
-        if (id.isBlank()) {
-            updateState(state.copy(message = "User not logged in"), emit)
-            return
-        }
-
-        updateState(state.copy(saving = true, message = null), emit)
-
-        val uri = state.pickedImageUri
-        if (uri == null) {
-            // Save without image upload
-            repo.updateProfile(id, state.user.copy(userId = id)) { ok, msg ->
-                updateState(
-                    state.copy(
-                        saving = false,
-                        message = if (ok) "Saved successfully" else msg.ifBlank { "Save failed" }
-                    ),
-                    emit
-                )
-            }
-            return
-        }
-
-        // Upload image then save
-        val storageRef = FirebaseStorage.getInstance()
-            .reference
-            .child("users/$id/profile/${UUID.randomUUID()}.jpg")
-
-        storageRef.putFile(uri)
-            .addOnSuccessListener {
-                storageRef.downloadUrl
-                    .addOnSuccessListener { downloadUrl ->
-                        val updatedUser = state.user.copy(
-                            userId = id,
-                            profileImageUrl = downloadUrl.toString()
-                        )
-
-                        repo.updateProfile(id, updatedUser) { ok, msg ->
-                            updateState(
-                                state.copy(
-                                    saving = false,
-                                    user = if (ok) updatedUser else state.user,
-                                    pickedImageUri = null,
-                                    message = if (ok) "Saved successfully" else msg.ifBlank { "Save failed" }
-                                ),
-                                emit
-                            )
-                        }
-                    }
-                    .addOnFailureListener { e ->
-                        updateState(state.copy(saving = false, message = e.message ?: "Failed to get image URL"), emit)
-                    }
-            }
-            .addOnFailureListener { e ->
-                updateState(state.copy(saving = false, message = e.message ?: "Image upload failed"), emit)
-            }
+    private fun update(block: (PersonalDetailsUiState) -> PersonalDetailsUiState) {
+        _ui.value = block(_ui.value)
     }
 }
