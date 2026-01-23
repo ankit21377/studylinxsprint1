@@ -213,11 +213,3 @@ private fun ProfileMenuCard(
                 modifier = Modifier.weight(1f)
             )
 
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = Color(0xFF8EA2BF)
-            )
-        }
-    }
-}
