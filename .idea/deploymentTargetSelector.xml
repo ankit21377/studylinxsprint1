@@ -5,7 +5,7 @@
       <SelectionState runConfigName="LoginActivity">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="DashboardActivity">
+      <SelectionState runConfigName="DocumentActivity">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
