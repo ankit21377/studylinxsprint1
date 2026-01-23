@@ -219,5 +219,3 @@ private fun ProfileMenuCard(
                 tint = Color(0xFF8EA2BF)
             )
         }
-    }
-}
