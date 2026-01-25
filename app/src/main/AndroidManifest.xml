@@ -14,9 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyLinX">
         <activity
-            android:name=".AdminCoursesActivity"
+            android:name=".CountryActivity"
             android:exported="true"
-            android:label="@string/title_activity_admin_courses"
+            android:label="@string/title_activity_country"
             android:theme="@style/Theme.StudyLinX">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,9 +25,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".UniversitiesByCourseActivity"
+            android:name=".PersonalDetailsActivity"
             android:exported="true"
-            android:label="@string/title_activity_universities_by_course"
+            android:label="@string/title_activity_personal_details"
             android:theme="@style/Theme.StudyLinX">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,61 +35,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".CoursesActivity"
-            android:exported="true"
-            android:label="@string/title_activity_courses"
-            android:theme="@style/Theme.StudyLinX">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".StartActivity"
-            android:exported="true"
-            android:label="@string/title_activity_start"
-            android:theme="@style/Theme.StudyLinX">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".AdminUniversityActivity"
-            android:exported="true"
-            android:label="@string/title_activity_admin_university"
-            android:theme="@style/Theme.StudyLinX">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".UniversityActivity"
-            android:exported="true"
-            android:label="@string/title_activity_university"
-            android:theme="@style/Theme.StudyLinX">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".LoginActivity"
-            android:exported="true">
-
-            <!-- This makes it the launcher activity -->
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
         <activity
             android:name=".DocumentActivity"
             android:exported="true"
