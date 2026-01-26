@@ -32,16 +32,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.studylinx.model.University
-import com.example.studylinx.university.vm.UniversityUiState
-import com.example.studylinx.university.vm.UniversityViewModel
+import com.example.studylinx.viewmodel.UniversityUiState
+import com.example.studylinx.viewmodel.UniversityViewModel
+
 
 class UniversityActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_COUNTRY_ID = "countryId"   // 🔥 key used in Intent
+    }
 
     private val vm: UniversityViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val countryId = intent.getStringExtra("countryId") ?: ""
+
+        // ✅ apply filter once
+        vm.setCountryFilter(countryId)
 
         setContent {
             MaterialTheme {

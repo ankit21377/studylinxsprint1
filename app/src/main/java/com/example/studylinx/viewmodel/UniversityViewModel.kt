@@ -1,17 +1,16 @@
-package com.example.studylinx.university.vm
+
+package com.example.studylinx.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.studylinx.model.University
 import com.example.studylinx.repo.UniversityRepo
-import com.example.studylinx.repo.UniversityRepoImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class UniversityViewModel(
-    private val repo: UniversityRepo = UniversityRepoImpl()
+    private val repo: UniversityRepo
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(UniversityUiState())
@@ -20,30 +19,29 @@ class UniversityViewModel(
     init {
         viewModelScope.launch {
             repo.observeUniversities().collect { list ->
-                _state.update {
-                    it.copy(
-                        loading = false,
-                        all = list,
-                        filtered = applyFilter(list, it.query)
-                    )
-                }
+                _state.value = _state.value.copy(
+                    loading = false,
+                    error = null,
+                    all = list
+                )
             }
         }
     }
 
     fun onQueryChange(q: String) {
-        _state.update {
-            it.copy(query = q, filtered = applyFilter(it.all, q))
-        }
+        _state.value = _state.value.copy(query = q)
     }
 
-    private fun applyFilter(list: List<University>, q: String): List<University> {
-        val query = q.trim().lowercase()
-        if (query.isEmpty()) return list
-        return list.filter {
-            it.name.lowercase().contains(query) ||
-                    it.city.lowercase().contains(query) ||
-                    it.country.lowercase().contains(query)
+    fun setCountryFilter(countryId: String) {
+        _state.value = _state.value.copy(countryId = countryId)
+    }
+
+    companion object {
+        fun factory(repo: UniversityRepo) = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return UniversityViewModel(repo) as T
+            }
         }
     }
 }

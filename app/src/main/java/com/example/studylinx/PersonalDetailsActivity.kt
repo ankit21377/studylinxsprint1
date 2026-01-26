@@ -1,159 +1,161 @@
 package com.example.studylinx
 
-import android.app.DatePickerDialog
 import android.os.Bundle
+import android.util.Patterns
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.studylinx.repo.UserRepoImpl
 import com.example.studylinx.viewmodel.PersonalDetailsViewModel
-import java.util.Calendar
+
+// ---- DocumentActivity palette ----
+private val BgTop = Color(0xFFF6FAFF)
+private val BgBottom = Color(0xFFEAF2FF)
+private val PrimaryBlue = Color(0xFF2F79E6)
+private val PrimaryBlue2 = Color(0xFF6EA4EA)
+private val SoftBlue = Color(0xFFEAF2FF)
+private val TextDark = Color(0xFF1C2B3A)
+private val TextMuted = Color(0xFF7D8BA0)
 
 class PersonalDetailsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val repo = UserRepoImpl()
-        val vm = PersonalDetailsViewModel(repo)
-
-        setContent {
-            MaterialTheme {
-                PersonalDetailsScreen(vm = vm, onBack = { finish() })
-            }
-        }
+        enableEdgeToEdge()
+        setContent { PersonalDetailsScreen(onBack = { finish() }) }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PersonalDetailsScreen(
-    vm: PersonalDetailsViewModel,
-    onBack: () -> Unit
+fun PersonalDetailsScreen(
+    onBack: () -> Unit,
+    vm: PersonalDetailsViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return PersonalDetailsViewModel(UserRepoImpl()) as T
+            }
+        }
+    )
 ) {
-    var uiState by remember { mutableStateOf(vm.state) }
     val ctx = LocalContext.current
+    val state by vm.ui.collectAsState()
 
-    LaunchedEffect(Unit) {
-        vm.loadUser { uiState = it }
+    LaunchedEffect(Unit) { vm.loadMe() }
+
+    // image picker
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        vm.setLocalImage(uri)
     }
 
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        vm.setPickedImage(uri) { uiState = it }
+    LaunchedEffect(state.error) {
+        state.error?.let { Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show() }
     }
-
-    fun openDobPicker() {
-        val cal = Calendar.getInstance()
-        DatePickerDialog(
-            ctx,
-            { _, y, m, d ->
-                val mm = (m + 1).toString().padStart(2, '0')
-                val dd = d.toString().padStart(2, '0')
-                vm.setDob("$y-$mm-$dd") { uiState = it }
-            },
-            cal.get(Calendar.YEAR),
-            cal.get(Calendar.MONTH),
-            cal.get(Calendar.DAY_OF_MONTH)
-        ).show()
+    LaunchedEffect(state.success) {
+        state.success?.let { Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show() }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Personal Details") },
+                title = { Text("Personal Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
-        }
+        },
+        containerColor = Color.Transparent
     ) { padding ->
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF4F7FF))
+                .background(Brush.verticalGradient(listOf(BgTop, BgBottom)))
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.TopCenter
         ) {
-            if (uiState.loading) {
-                CircularProgressIndicator()
-            } else {
-                Card(
+
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .shadow(16.dp, RoundedCornerShape(24.dp)),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                        .padding(16.dp)
                 ) {
-                    Column(
+
+                    // ---- Profile Image (click to change) ----
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(top = 6.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Spacer(Modifier.height(8.dp))
+                        Box(contentAlignment = Alignment.BottomEnd) {
 
-                        // Profile circle + "+"
-                        Box(modifier = Modifier.size(96.dp), contentAlignment = Alignment.Center) {
+                            val imgModel = state.localImageUri ?: state.profileImageUrl
+
                             Box(
                                 modifier = Modifier
-                                    .size(84.dp)
+                                    .size(92.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF2F79E6)),
+                                    .background(SoftBlue)
+                                    .clickable { imagePicker.launch("image/*") },
                                 contentAlignment = Alignment.Center
                             ) {
                                 when {
-                                    uiState.pickedImageUri != null -> {
+                                    state.localImageUri != null -> {
                                         AsyncImage(
-                                            model = uiState.pickedImageUri,
-                                            contentDescription = "Picked Profile",
-                                            modifier = Modifier
-                                                .size(84.dp)
-                                                .clip(CircleShape)
+                                            model = state.localImageUri,
+                                            contentDescription = "Profile",
+                                            modifier = Modifier.fillMaxSize()
                                         )
                                     }
-                                    uiState.user.profileImageUrl.isNotBlank() -> {
+                                    state.profileImageUrl.isNotBlank() -> {
                                         AsyncImage(
-                                            model = uiState.user.profileImageUrl,
+                                            model = imgModel,
                                             contentDescription = "Profile",
-                                            modifier = Modifier
-                                                .size(84.dp)
-                                                .clip(CircleShape)
+                                            modifier = Modifier.fillMaxSize()
                                         )
                                     }
                                     else -> {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(38.dp)
-                                                .clip(CircleShape)
-                                                .background(Color.White.copy(alpha = 0.9f))
+                                        // fallback icon-like feel
+                                        Text(
+                                            text = "👤",
+                                            fontSize = 30.sp
                                         )
                                     }
                                 }
@@ -161,97 +163,111 @@ private fun PersonalDetailsScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .offset(x = 2.dp, y = 2.dp)
-                                    .size(28.dp)
+                                    .size(30.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White)
-                                    .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                                    .clickable(enabled = !uiState.saving) { imagePicker.launch("image/*") },
+                                    .background(PrimaryBlue)
+                                    .clickable { imagePicker.launch("image/*") },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("+", color = Color(0xFF2F79E6))
-                            }
-                        }
-
-                        Spacer(Modifier.height(18.dp))
-
-                        PersonalField(uiState.user.firstname, "First Name") {
-                            vm.setFirstName(it) { uiState = it }
-                        }
-
-                        PersonalField(uiState.user.lastname, "Last Name") {
-                            vm.setLastName(it) { uiState = it }
-                        }
-
-                        PersonalField(
-                            value = uiState.user.email,
-                            placeholder = "Email Address",
-                            keyboardType = KeyboardType.Email
-                        ) {
-                            vm.setEmail(it) { uiState = it }
-                        }
-
-                        PersonalField(
-                            value = uiState.user.phoneNumber,
-                            placeholder = "Phone Number",
-                            keyboardType = KeyboardType.Phone
-                        ) {
-                            vm.setPhone(it) { uiState = it }
-                        }
-
-                        PersonalField(
-                            value = uiState.user.dateOfBirth,
-                            placeholder = "Date of Birth",
-                            readOnly = true,
-                            onClick = { openDobPicker() }
-                        ) { }
-
-                        PersonalField(uiState.user.address, "Address") {
-                            vm.setAddress(it) { uiState = it }
-                        }
-
-                        PersonalField(uiState.user.interestedCourseOrCountry, "Interested Course / Country") {
-                            vm.setInterested(it) { uiState = it }
-                        }
-
-                        Spacer(Modifier.height(14.dp))
-
-                        Button(
-                            onClick = { vm.saveDetails { uiState = it } },
-                            enabled = !uiState.saving,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F79E6))
-                        ) {
-                            if (uiState.saving) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = Color.White
+                                Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = "Change",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(Modifier.width(10.dp))
-                                Text("Saving...", color = Color.White)
-                            } else {
-                                Text("Save Details", color = Color.White)
                             }
-                        }
-
-                        if (!uiState.message.isNullOrBlank()) {
-                            Spacer(Modifier.height(10.dp))
-                            Text(
-                                text = uiState.message ?: "",
-                                color = Color(0xFF2B3A55),
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFFF4F7FF))
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                                    .clickable { vm.clearMessage { uiState = it } }
-                            )
                         }
                     }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // ---- Fields (like the image) ----
+                    PersonalTextField(
+                        value = state.fullName,
+                        onChange = vm::setFullName,
+                        placeholder = "Full Name",
+                        enabled = !state.saving
+                    )
+                    Spacer(Modifier.height(10.dp))
+
+                    PersonalTextField(
+                        value = state.email,
+                        onChange = vm::setEmail,
+                        placeholder = "Email Address",
+                        enabled = !state.saving
+                    )
+                    Spacer(Modifier.height(10.dp))
+
+                    PersonalTextField(
+                        value = state.phone,
+                        onChange = vm::setPhone,
+                        placeholder = "Phone Number",
+                        enabled = !state.saving
+                    )
+                    Spacer(Modifier.height(10.dp))
+
+                    PersonalTextField(
+                        value = state.dob,
+                        onChange = vm::setDob,
+                        placeholder = "Date of Birth",
+                        enabled = !state.saving
+                    )
+                    Spacer(Modifier.height(10.dp))
+
+                    PersonalTextField(
+                        value = state.address,
+                        onChange = vm::setAddress,
+                        placeholder = "Address",
+                        enabled = !state.saving
+                    )
+                    Spacer(Modifier.height(10.dp))
+
+                    PersonalTextField(
+                        value = state.interested,
+                        onChange = vm::setInterested,
+                        placeholder = "Interested Course / Country",
+                        enabled = !state.saving
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            // small extra validation in UI
+                            val emailOk = state.email.trim().isNotBlank() &&
+                                    Patterns.EMAIL_ADDRESS.matcher(state.email.trim()).matches()
+                            if (!emailOk) {
+                                Toast.makeText(ctx, "Enter a valid email", Toast.LENGTH_SHORT).show()
+                            } else {
+                                vm.saveDetails()
+                            }
+                        },
+                        enabled = !state.saving,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    ) {
+                        Text(
+                            text = if (state.saving) "Saving..." else "Save Details",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
+
+                    if (state.loading) {
+                        Spacer(Modifier.height(12.dp))
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = PrimaryBlue)
+                    }
+
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Tip: Tap on the profile image to change it.",
+                        color = TextMuted,
+                        fontSize = 12.sp
+                    )
                 }
             }
         }
@@ -259,37 +275,27 @@ private fun PersonalDetailsScreen(
 }
 
 @Composable
-fun AsyncImage(model: String, contentDescription: String, modifier: Modifier) {
-    TODO("Not yet implemented")
-}
-
-@Composable
-private fun PersonalField(
+private fun PersonalTextField(
     value: String,
+    onChange: (String) -> Unit,
     placeholder: String,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    readOnly: Boolean = false,
-    onClick: (() -> Unit)? = null,
-    onChange: (String) -> Unit
+    enabled: Boolean
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
+        enabled = enabled,
+        singleLine = true,
+        placeholder = { Text(placeholder, color = TextMuted) },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 7.dp)
-            .let { m -> if (onClick != null) m.clickable { onClick() } else m },
-        readOnly = readOnly,
-        singleLine = true,
-        shape = RoundedCornerShape(14.dp),
-        placeholder = { Text(placeholder, color = Color(0xFF9AA6B2)) },
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            .height(54.dp),
+        shape = RoundedCornerShape(10.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color(0xFFDFE7F3),
-            unfocusedBorderColor = Color(0xFFDFE7F3),
-            focusedContainerColor = Color(0xFFF8FAFF),
-            unfocusedContainerColor = Color(0xFFF8FAFF),
-            cursorColor = Color(0xFF2F79E6)
+            unfocusedContainerColor = Color.White,
+            focusedContainerColor = Color.White,
+            unfocusedBorderColor = Color(0xFFE3EBFF),
+            focusedBorderColor = Color(0xFFBFD3FF)
         )
     )
 }
