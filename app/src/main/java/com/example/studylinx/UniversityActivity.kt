@@ -37,6 +37,9 @@ import com.example.studylinx.viewmodel.UniversityViewModel
 
 
 class UniversityActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_COUNTRY_ID = "countryId"   // 🔥 key used in Intent
+    }
 
     private val vm: UniversityViewModel by viewModels()
 
