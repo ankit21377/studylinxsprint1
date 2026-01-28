@@ -25,5 +25,11 @@ class LoginActivityInstrumentedTest {
     fun loginScreen_displaysLoginButton() {
         rule.onNodeWithTag("login").assertExists()
     }
+    @Test
+    fun loginScreen_allowsTypingEmailAndPassword() {
+        rule.onNodeWithTag("email").performTextInput("test@example.com")
+        rule.onNodeWithTag("password").performTextInput("12345678")
+        rule.onNodeWithTag("email").assertTextContains("test@example.com")
+    }
 
 }
