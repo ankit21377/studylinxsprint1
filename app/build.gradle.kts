@@ -44,6 +44,24 @@ android {
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
+
+    // JUnit extension
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+
+    // Test runner & rules
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test:rules:1.5.0")
+
+    // Espresso core
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+    // Espresso Intents (for testing navigation)
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.5.1")
+
+
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+
     // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
