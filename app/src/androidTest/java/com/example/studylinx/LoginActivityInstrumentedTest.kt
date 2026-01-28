@@ -21,5 +21,9 @@ class LoginActivityInstrumentedTest {
     fun loginScreen_displaysPasswordField() {
         rule.onNodeWithTag("password").assertExists()
     }
+    @Test
+    fun loginScreen_displaysLoginButton() {
+        rule.onNodeWithTag("login").assertExists()
+    }
 
 }
