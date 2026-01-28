@@ -59,6 +59,9 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-intents:3.5.1")
 
 
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+
     // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
