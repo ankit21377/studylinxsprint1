@@ -31,5 +31,11 @@ class LoginActivityInstrumentedTest {
         rule.onNodeWithTag("password").performTextInput("12345678")
         rule.onNodeWithTag("email").assertTextContains("test@example.com")
     }
+    @Test
+    fun clickingLoginWithEmptyInputs_staysOnLoginScreen() {
+        rule.onNodeWithTag("login").performClick()
+        rule.onNodeWithTag("email").assertExists()
+    }
+
 
 }
