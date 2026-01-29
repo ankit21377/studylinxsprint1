@@ -44,6 +44,11 @@ android {
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
+    // Mockito
+    testImplementation("org.mockito:mockito-core:5.11.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+
+
 
     // JUnit extension
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
