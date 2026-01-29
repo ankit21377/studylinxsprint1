@@ -1,54 +1,66 @@
+// File: com/example/studylinx/viewmodel/HomeViewModel.kt
 package com.example.studylinx.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.studylinx.model.*
-import com.example.studylinx.repo.HomeRepo
+import com.example.studylinx.model.Country
+import com.example.studylinx.model.University
+import com.example.studylinx.repo.CountryRepo
+import com.example.studylinx.repo.CountryRepoImpl
+import com.example.studylinx.repo.UniversityRepo
+import com.example.studylinx.repo.UniversityRepoImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class HomeUiState(
+    val loadingCountries: Boolean = true,
+    val loadingUniversities: Boolean = true,
+
+    val countries: List<Country> = emptyList(),
+    val universities: List<University> = emptyList(),
+
+    val errorCountries: String? = null,
+    val errorUniversities: String? = null,
+
+    // Appointment summary (simple for home)
+    val upcomingAppointmentMillis: Long = 0L,
+    val upcomingAppointmentCounselor: String = "",
+    val upcomingAppointmentStatus: String = "Pending"
+)
+
 class HomeViewModel(
-    private val repo: HomeRepo
+    private val countryRepo: CountryRepo = CountryRepoImpl(),
+    private val universityRepo: UniversityRepo = UniversityRepoImpl()
 ) : ViewModel() {
 
-    private val _countries = MutableStateFlow<List<Country>>(emptyList())
-    val countries: StateFlow<List<Country>> = _countries
+    private val _ui = MutableStateFlow(HomeUiState())
+    val ui: StateFlow<HomeUiState> = _ui
 
-    private val _universities = MutableStateFlow<List<University>>(emptyList())
-    val universities: StateFlow<List<University>> = _universities
+    init {
+        observeCountries()
+        observeUniversities()
 
-    private val _appointment = MutableStateFlow<Appointment?>(null)
-    val appointment: StateFlow<Appointment?> = _appointment
+        // If you later want real upcoming appointment from Firestore/RTDB,
+        // you can plug it in here. For now it keeps UI working.
+        // You can also set a demo appointment like:
+        // _ui.update { it.copy(upcomingAppointmentMillis = System.currentTimeMillis() + 86400000) }
+    }
 
-    private val _progress = MutableStateFlow(ApplicationProgress())
-    val progress: StateFlow<ApplicationProgress> = _progress
-
-    val loading = MutableStateFlow(false)
-    val error = MutableStateFlow<String?>(null)
-
-    fun startHome(limitUniversities: Int = 6) {
+    private fun observeCountries() {
         viewModelScope.launch {
-            try {
-                loading.value = true
-                repo.seedIfEmpty()
-
-                launch { repo.observeCountries().collect { _countries.value = it } }
-                launch { repo.observeUniversities(limitUniversities).collect { _universities.value = it } }
-                launch { repo.observeUpcomingAppointment().collect { _appointment.value = it } }
-                launch { repo.observeProgress().collect { _progress.value = it } }
-
-            } catch (e: Exception) {
-                error.value = e.message
-            } finally {
-                loading.value = false
+            countryRepo.observeCountries().collect { list ->
+                _ui.update { it.copy(countries = list, loadingCountries = false, errorCountries = null) }
             }
         }
     }
 
-    fun setStepCompleted(stepIndex: Int, completed: Boolean) {
+    private fun observeUniversities() {
         viewModelScope.launch {
-            repo.updateProgress(stepIndex, completed)
+            universityRepo.observeUniversities().collect { list ->
+                _ui.update { it.copy(universities = list, loadingUniversities = false, errorUniversities = null) }
+            }
         }
     }
 }
