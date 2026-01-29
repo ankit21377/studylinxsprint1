@@ -1,98 +1,42 @@
+
 package com.example.studylinx.viewmodel
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.studylinx.model.UserModel
 import com.example.studylinx.repo.UserRepo
 import com.google.firebase.auth.FirebaseUser
 
+class UserViewModel(
+    private val repo: UserRepo
+) : ViewModel() {
 
-class UserViewModel(val repo : UserRepo) : ViewModel() {
-    fun login(
-        email: String, password: String,
-        callback: (Boolean, String) -> Unit
-    ) {
-        repo.login(email, password, callback)
-    }
-
-    fun forgetPassword(
-        email: String,
-        callback: (Boolean, String) -> Unit
-    ) {
-        repo.forgetpassword(email, callback)
-    }
-
-    fun updateProfile(
-        userId: String, model: UserModel,
-        callback: (Boolean, String) -> Unit
-    ) {
-        repo.updateProfile(userId, model, callback)
-    }
-
-    fun getCurrentUser(): FirebaseUser? {
-        return repo.getCurrentUser()
-    }
-
-    fun deleteAccount(userId: String, callback: (Boolean, String) -> Unit) {
-        repo.deleteProfile(userId, callback)
-    }
-
-    fun logOut(callback: (Boolean, String) -> Unit) {
-        repo.logout(callback)
-    }
-
-    private val _users = MutableLiveData<UserModel?>()
-    val users: MutableLiveData<UserModel?>
-        get() = _users
-
-    private val _allUsers = MutableLiveData<List<UserModel>?>()
-    val allUsers: MutableLiveData<List<UserModel>?>
-        get() = _allUsers
-
-    private val _loading = MutableLiveData<Boolean>()
-    val loading: MutableLiveData<Boolean>
-        get() = _loading
-
-    fun getUserById(
-        userId: String,
-    ) {
-        _loading.postValue(true)
-        repo.getUserById(userId) { success, msg, data ->
-            if (success) {
-                _loading.postValue(false)
-                _users.postValue(data)
-            } else {
-                _loading.postValue(false)
-                _users.postValue(null)
-            }
+    fun register(email: String, password: String, callback: (Boolean, String?, String?) -> Unit) {
+        repo.register(email, password) { ok, msg, uid ->
+            callback(ok, msg, uid)
         }
     }
 
-    fun getAllUser() {
-        _loading.postValue(true)
-        repo.getAllUser { success, msg, data ->
-            if (success) {
-                _loading.postValue(false)
-                _allUsers.postValue(data)
-            } else {
-                _loading.postValue(false)
-                _allUsers.postValue(null)
-            }
+    fun addUserToDatabase(userId: String, model: UserModel, callback: (Boolean, String?) -> Unit) {
+        repo.addUserToDatabase(userId, model) { ok, msg ->
+            callback(ok, msg)
         }
     }
 
-    fun register(
-        email: String, password: String,
-        callback: (Boolean, String, String) -> Unit
-    ) {
-        repo.register(email, password, callback)
+    fun login(email: String, password: String, callback: (Boolean, String?) -> Unit) {
+        repo.login(email, password) { ok, msg ->
+            callback(ok, msg)
+        }
     }
 
-    fun addUserToDatabase(
-        userId: String,
-        model: UserModel,
-        callback: (Boolean, String) -> Unit
-    ) {
-        repo.addUserToDatabase(userId, model, callback)
+    fun getCurrentUser(): FirebaseUser? = repo.getCurrentUser()
+
+    fun logout(callback: (Boolean, String?) -> Unit) {
+        repo.logout { ok, msg -> callback(ok, msg) }
+    }
+
+    fun getUserById(userId: String, callback: (Boolean, String?, UserModel?) -> Unit) {
+        repo.getUserById(userId) { ok, msg, user ->
+            callback(ok, msg, user)
+        }
     }
 }
