@@ -14,6 +14,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyLinX">
         <activity
+            android:name=".UniversityDetailsActivity"
+            android:exported="true"
+            android:label="@string/title_activity_university_details"
+            android:theme="@style/Theme.StudyLinX">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".CountryActivity"
             android:exported="true"
             android:label="@string/title_activity_country"
@@ -28,6 +39,17 @@
             android:name=".PersonalDetailsActivity"
             android:exported="true"
             android:label="@string/title_activity_personal_details"
+            android:theme="@style/Theme.StudyLinX">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".UniversityActivity"
+            android:exported="true"
+            android:label="UniversityActivity"
             android:theme="@style/Theme.StudyLinX">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -58,7 +80,6 @@
         <activity
             android:name=".LoginActivity"
             android:exported="true" />
-
         <activity
             android:name=".RegisterActivity"
             android:exported="true"
