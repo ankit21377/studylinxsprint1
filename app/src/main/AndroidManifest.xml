@@ -47,6 +47,17 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".UniversityActivity"
+            android:exported="true"
+            android:label="UniversityActivity"
+            android:theme="@style/Theme.StudyLinX">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".DocumentActivity"
             android:exported="true"
             android:label="@string/title_activity_document"
