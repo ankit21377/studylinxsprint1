@@ -1,6 +1,7 @@
 package com.example.studylinx
 
 import android.content.Intent
+import androidx.compose.ui.platform.testTag
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -112,7 +113,8 @@ fun RegisterBody(){
                     contentDescription = null,
                 )
             }
-            Row(modifier = Modifier.fillMaxWidth(),
+            Row(modifier = Modifier.fillMaxWidth()
+                .testTag("reg_title"),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically){
                 Text("Create an Account",
@@ -140,14 +142,15 @@ fun RegisterBody(){
                             horizontalArrangement = Arrangement.spacedBy(8.dp), // More modern way to add space
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            1
+
                             // --- First Name Field ---
                             OutlinedTextField(
                                 value = firstname,
                                 onValueChange = { data -> firstname = data },
                                 shape = RoundedCornerShape(12.dp),
                                 placeholder = { Text("First/MiddleName") },
-                                modifier = Modifier.weight(1f), // <-- KEY CHANGE
+                                modifier = Modifier.weight(1f)
+                                    .testTag("reg_firstname"),
                                 singleLine = true, // Good for names
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = White,
@@ -163,7 +166,8 @@ fun RegisterBody(){
                                 onValueChange = { data -> lastname = data },
                                 shape = RoundedCornerShape(12.dp),
                                 placeholder = { Text("Lastname") },
-                                modifier = Modifier.weight(1f), // <-- KEY CHANGE
+                                modifier = Modifier.weight(1f)
+                                    .testTag("reg_lastname"),// <-- KEY CHANGE
                                 singleLine = true,
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = White,
@@ -188,7 +192,8 @@ fun RegisterBody(){
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Email
                                 ),
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth()
+                                    .testTag("reg_email"),
                                 placeholder = {
                                     Text("abc@gmail.com")
                                 },
@@ -228,7 +233,8 @@ fun RegisterBody(){
                                     }
 
                                 },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth()
+                                    .testTag("reg_password"),
                                 placeholder = {
                                     Text("Password")
                                 },
@@ -269,7 +275,8 @@ fun RegisterBody(){
                                     }
 
                                 },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth()
+                                    .testTag("reg_confirm"),
                                 placeholder = {
                                     Text("Confirm Password")
                                 },
@@ -344,7 +351,8 @@ fun RegisterBody(){
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(100.dp)
-                        .padding(horizontal = 40.dp, vertical = 20.dp),
+                        .padding(horizontal = 40.dp, vertical = 20.dp)
+                        .testTag("reg_signup"),
                 ) { Text("Sign Up") }
             }
             Spacer(modifier = Modifier.height(10.dp))
@@ -362,7 +370,9 @@ fun RegisterBody(){
                     }
                     pop()
                 }
-                ClickableText(text = annotatedString, onClick = { offset ->
+                ClickableText(
+                    modifier = Modifier.testTag("reg_sign_in_link")
+                    , text = annotatedString, onClick = { offset ->
                     annotatedString.getStringAnnotations(tag = "SignIn", start = offset, end = offset)
                         .firstOrNull()?.let {
                             context.startActivity(Intent(context, LoginActivity::class.java))

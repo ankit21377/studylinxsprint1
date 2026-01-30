@@ -36,6 +36,24 @@ class LoginActivityInstrumentedTest {
         rule.onNodeWithTag("login").performClick()
         rule.onNodeWithTag("email").assertExists()
     }
+    @Test
+    fun validLogin_navigatesToDashboard() {
+
+        rule.onNodeWithTag("email")
+            .performTextInput("test@gmail.com")
+
+        rule.onNodeWithTag("password")
+            .performTextInput("password123")
+
+        rule.onNodeWithTag("login")
+            .performClick()
+
+        rule.waitForIdle()
+
+        rule.onNodeWithTag("dashboard")
+            .assertExists()
+    }
+
 
 
 }
