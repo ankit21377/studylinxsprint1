@@ -52,6 +52,7 @@ fun DashboardBody() {
             NavigationBar {
                 listItems.forEachIndexed { index, item ->
                     NavigationBarItem(
+                        modifier = Modifier.testTag("nav_${item.label.lowercase()}"),
                         icon = {
                             Icon(
                                 painter = painterResource(item.icon),
