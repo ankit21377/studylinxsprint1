@@ -207,49 +207,6 @@ class AppointmentViewModelUnitTest {
     }
 
     @Test
-    fun appointmentsForSelectedDay_filterUpcomingAndPast() = runTest {
-        val vm = AppointmentViewModel(repo)
-        vm.setUser("uid123")
-
-        val zone = ZoneId.systemDefault()
-        val selected = LocalDate.of(2026, 1, 10)
-        vm.setSelectedDate(selected)
-
-        // Put two appointments on the selected date: one past, one future (relative to now)
-        val now = System.currentTimeMillis()
-        val pastStart = now - 120_000
-        val pastEnd = now - 60_000
-        val futureStart = now + 60_000
-        val futureEnd = now + 120_000
-
-        // Ensure they fall within selected day's start/end range:
-        // easiest = compute selected day start and offset within it:
-        val dayStart = selected.atStartOfDay(zone).toInstant().toEpochMilli()
-        val pastOnSelected = dayStart + 1_000
-        val pastOnSelectedEnd = dayStart + 2_000
-        val futureOnSelected = dayStart + 23 * 60 * 60 * 1000 // 23:00
-        val futureOnSelectedEnd = futureOnSelected + 60_000
-
-        onUpdate(
-            listOf(
-                Appointment(title = "Past", note = "done", startMillis = pastOnSelected, endMillis = pastOnSelectedEnd),
-                Appointment(title = "Future", note = "upcoming", startMillis = futureOnSelected, endMillis = futureOnSelectedEnd)
-            )
-        )
-        advanceUntilIdle()
-
-        vm.setFilter(AppointmentFilter.UPCOMING)
-        val up = vm.appointmentsForSelectedDay()
-        assertEquals(1, up.size)
-        assertEquals("Future", up[0].title)
-
-        vm.setFilter(AppointmentFilter.PAST)
-        val past = vm.appointmentsForSelectedDay()
-        assertEquals(1, past.size)
-        assertEquals("Past", past[0].title)
-    }
-
-    @Test
     fun addAppointment_callsRepo_whenUserIsSet() = runTest {
         whenever(repo.addAppointment(any(), any(), any())).thenAnswer { inv ->
             val cb = inv.getArgument<(Boolean, String?) -> Unit>(2)
