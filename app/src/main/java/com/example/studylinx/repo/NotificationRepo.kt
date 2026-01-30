@@ -4,10 +4,18 @@ import com.example.studylinx.model.NotificationItem
 import kotlinx.coroutines.flow.Flow
 
 interface NotificationRepo {
-    fun observeGlobalNotifications(): Flow<List<NotificationItem>>
-    fun observeNotificationsForUser(userId: String): Flow<List<NotificationItem>>
+
+    fun observeGlobal(): Flow<List<NotificationItem>>                 // ALL users
+    fun observeForUser(userId: String): Flow<List<NotificationItem>>  // ALL + specific user
 
     suspend fun markAsRead(notificationId: String)
-    suspend fun markAllAsReadForUser(userId: String)
-    suspend fun deleteNotification(notificationId: String)
+    suspend fun delete(notificationId: String)
+
+    suspend fun createNotification(
+        targetUserId: String,  // "ALL" or UID
+        userName: String,
+        title: String,
+        message: String,
+        likeCount: Int = 0
+    )
 }

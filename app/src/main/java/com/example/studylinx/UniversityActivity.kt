@@ -35,17 +35,21 @@ import com.example.studylinx.model.University
 import com.example.studylinx.viewmodel.UniversityUiState
 import com.example.studylinx.viewmodel.UniversityViewModel
 
-
 class UniversityActivity : ComponentActivity() {
+
+    companion object {
+        const val EXTRA_COUNTRY_ID = "countryId"
+        const val EXTRA_UNI_ID = "uniId"
+    }
 
     private val vm: UniversityViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val countryId = intent.getStringExtra("countryId") ?: ""
 
-        // ✅ apply filter once
+        val countryId = intent.getStringExtra(EXTRA_COUNTRY_ID) ?: ""
+
         vm.setCountryFilter(countryId)
 
         setContent {
@@ -57,6 +61,11 @@ class UniversityActivity : ComponentActivity() {
                         if (url.isNotBlank()) {
                             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                         }
+                    },
+                    onUniversityClick = { uni ->
+                        val i = Intent(this, UniversityDetailsActivity::class.java)
+                        i.putExtra(EXTRA_UNI_ID, uni.id)
+                        startActivity(i)
                     }
                 )
             }
@@ -69,7 +78,8 @@ class UniversityActivity : ComponentActivity() {
 fun UniversityScaffoldScreen(
     vm: UniversityViewModel,
     onBack: () -> Unit,
-    onOpenLocation: (String) -> Unit
+    onOpenLocation: (String) -> Unit,
+    onUniversityClick: (University) -> Unit
 ) {
     val state by vm.state.collectAsState()
 
@@ -81,34 +91,24 @@ fun UniversityScaffoldScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Universities",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
+                    Text("Universities", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.Black
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                     }
                 }
             )
         }
     ) { padding ->
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(bg)
-                .padding(padding)              // ✅ keeps topbar visible
+                .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-
                 Spacer(Modifier.height(6.dp))
 
                 SearchBar(
@@ -120,7 +120,8 @@ fun UniversityScaffoldScreen(
 
                 UniversityList(
                     state = state,
-                    onOpenLocation = onOpenLocation
+                    onOpenLocation = onOpenLocation,
+                    onUniversityClick = onUniversityClick
                 )
             }
         }
@@ -154,25 +155,24 @@ private fun SearchBar(
 @Composable
 private fun UniversityList(
     state: UniversityUiState,
-    onOpenLocation: (String) -> Unit
+    onOpenLocation: (String) -> Unit,
+    onUniversityClick: (University) -> Unit
 ) {
     if (state.loading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp) // ✅ less space
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(state.filtered, key = { it.id }) { uni ->
                 UniversityCard(
                     uni = uni,
-                    onOpenLocation = { onOpenLocation(uni.locationUrl) }
+                    onOpenLocation = { onOpenLocation(uni.locationUrl) },
+                    onClick = { onUniversityClick(uni) }
                 )
             }
         }
@@ -182,42 +182,41 @@ private fun UniversityList(
 @Composable
 private fun UniversityCard(
     uni: University,
-    onOpenLocation: () -> Unit
+    onOpenLocation: () -> Unit,
+    onClick: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF7FAFF)),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }   // ✅ whole card clickable
     ) {
         Row(
-            modifier = Modifier.padding(10.dp),  // ✅ smaller padding
+            modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             AsyncImage(
                 model = uni.imageUrl,
                 contentDescription = uni.name,
                 modifier = Modifier
-                    .size(64.dp)                 // ✅ smaller image
+                    .size(64.dp)
                     .clip(RoundedCornerShape(10.dp))
             )
 
             Spacer(Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-
                 Text(
                     text = uni.name,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp,            // ✅ smaller title
+                    fontSize = 15.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     color = Color(0xFF0E2A47)
                 )
-
                 Spacer(Modifier.height(2.dp))
-
                 Text(
                     text = "${uni.city}, ${uni.country}",
                     fontSize = 12.sp,
@@ -225,9 +224,7 @@ private fun UniversityCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
                 Spacer(Modifier.height(5.dp))
-
                 Text(
                     text = uni.description,
                     fontSize = 11.sp,
@@ -241,7 +238,7 @@ private fun UniversityCard(
 
             Box(
                 modifier = Modifier
-                    .size(38.dp)                  // ✅ smaller icon box
+                    .size(38.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(Color(0xFFE8F1FF))
                     .clickable { onOpenLocation() },

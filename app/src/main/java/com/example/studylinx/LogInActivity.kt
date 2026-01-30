@@ -1,5 +1,6 @@
 package com.example.studylinx
 
+import androidx.compose.ui.platform.testTag
 import android.content.Intent
 import android.os.Bundle
 import android.util.Patterns
@@ -175,7 +176,7 @@ fun LoginBody() {
                             onValueChange = { email = it },
                             shape = RoundedCornerShape(12.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().testTag("email"),
                             placeholder = { Text("abc@gmail.com") },
                             singleLine = true,
                             enabled = !isLoading,
@@ -209,7 +210,7 @@ fun LoginBody() {
                                     )
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().testTag("password"),
                             placeholder = { Text("Password") },
                             singleLine = true,
                             enabled = !isLoading,
@@ -234,7 +235,7 @@ fun LoginBody() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(100.dp)
-                        .padding(horizontal = 40.dp, vertical = 20.dp),
+                        .padding(horizontal = 40.dp, vertical = 20.dp).testTag("login"),
                 ) {
                     Text(if (isLoading) "Signing in..." else "Sign in")
                 }
