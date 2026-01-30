@@ -2,8 +2,10 @@ package com.example.studylinx
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -11,7 +13,6 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -24,30 +25,30 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.studylinx.model.NotificationItem
 import com.example.studylinx.viewmodel.NotificationViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private enum class NotificationTab { ALL, UNREAD, READ }
 
 @Composable
 fun NotificationScreen(
     vm: NotificationViewModel = viewModel(),
-
-    loadForCurrentUser: Boolean = false
+    userId: String? = null   // pass logged-in UID, if null show global
 ) {
-
     val allNotifications by vm.notifications.collectAsState()
     val loading by vm.loading.collectAsState()
     val error by vm.error.collectAsState()
 
-
-    LaunchedEffect(loadForCurrentUser) {
-
-        vm.startObservingGlobal()
+    // ✅ start observing
+    LaunchedEffect(userId) {
+        if (userId.isNullOrBlank()) vm.startForAllUsers()
+        else vm.startForUser(userId)
     }
 
-
     var tab by remember { mutableStateOf(NotificationTab.ALL) }
-
     val unreadCount = remember(allNotifications) { allNotifications.count { !it.isRead } }
+
     val shown = remember(allNotifications, tab) {
         when (tab) {
             NotificationTab.ALL -> allNotifications
@@ -55,6 +56,9 @@ fun NotificationScreen(
             NotificationTab.READ -> allNotifications.filter { it.isRead }
         }
     }
+
+    // ✅ popup selected item
+    var selected by remember { mutableStateOf<NotificationItem?>(null) }
 
     val screenBg = Color(0xFFEEF5FF)
     val primaryBlue = Color(0xFF4E86D9)
@@ -66,33 +70,22 @@ fun NotificationScreen(
             .background(screenBg)
     ) {
 
+        // header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(92.dp)
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(primaryBlue, primaryBlue2)
-                    )
-                )
+                .background(Brush.horizontalGradient(listOf(primaryBlue, primaryBlue2)))
                 .padding(horizontal = 20.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            Text(
-                text = "Notifications",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text("Notifications", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(Modifier.height(16.dp))
 
-
         NotificationTabs(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
             selected = tab,
             unreadCount = unreadCount,
             onSelect = { tab = it }
@@ -100,7 +93,6 @@ fun NotificationScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // --- Content states ---
         when {
             loading -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -120,18 +112,60 @@ fun NotificationScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    items(shown) { item ->
+                    items(shown, key = { it.id }) { item ->
                         NotificationCard(
                             item = item,
-                            primaryBlue = primaryBlue
+                            primaryBlue = primaryBlue,
+                            onClick = {
+                                selected = item
+                                // ✅ mark read when opened
+                                if (!item.isRead) vm.markAsRead(item.id)
+                            }
                         )
                     }
-
                     item { Spacer(Modifier.height(10.dp)) }
                 }
             }
         }
     }
+
+    // ✅ popup dialog (message box)
+    if (selected != null) {
+        NotificationDetailDialog(
+            item = selected!!,
+            onDismiss = { selected = null }
+        )
+    }
+}
+
+@Composable
+private fun NotificationDetailDialog(item: NotificationItem, onDismiss: () -> Unit) {
+    val fmt = remember { SimpleDateFormat("MMM dd, yyyy • hh:mm a", Locale.getDefault()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+        title = {
+            Text(item.title.ifBlank { "Notification" }, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column {
+                Text(item.message.ifBlank { "No details available." })
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "From: ${item.userName.ifBlank { "System" }}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF6A7786)
+                )
+                Text(
+                    text = fmt.format(Date(item.createdAt)),
+                    fontSize = 12.sp,
+                    color = Color(0xFF6A7786)
+                )
+            }
+        }
+    )
 }
 
 @Composable
@@ -174,7 +208,6 @@ private fun NotificationTabs(
             modifier = Modifier.weight(1f)
         )
 
-        // small divider like image
         Box(
             modifier = Modifier
                 .width(1.dp)
@@ -204,8 +237,6 @@ private fun TabPill(
     unselectedText: Color,
     modifier: Modifier = Modifier
 ) {
-    val underlineColor = selectedBlue
-
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -218,21 +249,7 @@ private fun TabPill(
             modifier = Modifier.fillMaxSize(),
             colors = ButtonDefaults.textButtonColors(contentColor = if (selected) selectedBlue else unselectedText)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = text,
-                    fontSize = 18.sp,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                )
-                Spacer(Modifier.height(6.dp))
-                Box(
-                    modifier = Modifier
-                        .height(4.dp)
-                        .width(42.dp)
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(if (selected) underlineColor else Color.Transparent)
-                )
-            }
+            Text(text, fontSize = 18.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
         }
     }
 }
@@ -260,13 +277,8 @@ private fun TabUnread(
             colors = ButtonDefaults.textButtonColors(contentColor = if (selected) selectedBlue else unselectedText)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Unread",
-                    fontSize = 18.sp,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                )
+                Text("Unread", fontSize = 18.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
                 Spacer(Modifier.width(10.dp))
-                // Badge like image (blue circle with number)
                 Box(
                     modifier = Modifier
                         .size(28.dp)
@@ -274,12 +286,7 @@ private fun TabUnread(
                         .background(selectedBlue),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = unreadCount.coerceAtLeast(0).toString(),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
+                    Text(unreadCount.toString(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -289,13 +296,14 @@ private fun TabUnread(
 @Composable
 private fun NotificationCard(
     item: NotificationItem,
-    primaryBlue: Color
+    primaryBlue: Color,
+    onClick: () -> Unit
 ) {
-    // Card like image: big rounded, light shadow, bell icon left, text, optional blue dot at right for unread
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(18.dp)),
+            .shadow(6.dp, RoundedCornerShape(18.dp))
+            .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -305,7 +313,6 @@ private fun NotificationCard(
                 .padding(horizontal = 18.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bell icon in soft blue circle-ish feel
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -323,23 +330,25 @@ private fun NotificationCard(
 
             Spacer(Modifier.width(14.dp))
 
-            Text(
-                text = buildString {
-                    // If your DB stores only "action" as full sentence, this still works
-                    val msg = if (item.userName.isNotBlank() && item.action.isNotBlank())
-                        "${item.userName} ${item.action}"
-                    else item.action.ifBlank { "Notification" }
-                    append(msg)
-                    // In your screenshot, only one line message. Keep it clean.
-                },
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF1B2430),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.title.ifBlank { "Notification" },
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1B2430),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = item.message.ifBlank { "" },
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF445466),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
             if (!item.isRead) {
                 Spacer(Modifier.width(12.dp))

@@ -2,11 +2,7 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-<<<<<<< HEAD
-      <SelectionState runConfigName="RegisterActivityInstrumentedTest">
-=======
-      <SelectionState runConfigName="DashboardActivity">
->>>>>>> development
+      <SelectionState runConfigName="AdminNotificationsActivity">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>

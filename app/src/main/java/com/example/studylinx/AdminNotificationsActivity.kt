@@ -1,5 +1,4 @@
-// File: com/example/studylinx/admin/AdminNotificationsActivity.kt
-package com.example.studylinx.admin
+package com.example.studylinx
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,23 +8,18 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.studylinx.viewmodel.NotificationViewModel
 
 class AdminNotificationsActivity : ComponentActivity() {
 
-    private val vm: AdminNotificationViewModel by viewModels()
+    private val vm: NotificationViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,174 +27,111 @@ class AdminNotificationsActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                AdminNotificationsScreen(vm = vm, onBack = { finish() })
+                AdminNotificationUploadScreen(vm = vm)
             }
         }
     }
 }
 
-// ---------- App palette ----------
-private val BgTop = Color(0xFF7EC7F5)
-private val BgBottom = Color(0xFFEAF4FF)
-private val PrimaryBlue = Color(0xFF2D7EF7)
-private val CardBg = Color(0xFFF7FAFF)
-private val TextDark = Color(0xFF0E2A47)
-private val Muted = Color(0xFF6A7786)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AdminNotificationsScreen(
-    vm: AdminNotificationViewModel,
-    onBack: () -> Unit
-) {
-    val state by vm.ui.collectAsState()
+fun AdminNotificationUploadScreen(vm: NotificationViewModel) {
 
-    val bg = Brush.verticalGradient(listOf(BgTop, BgBottom))
+    val bg = Brush.verticalGradient(listOf(Color(0xFF7EC7F5), Color(0xFFEAF4FF)))
+
+    var targetUserId by remember { mutableStateOf("ALL") }
+    var adminName by remember { mutableStateOf("Admin") }
+    var title by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+
+    var showSent by remember { mutableStateOf(false) }
+    val error by vm.error.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        "Admin Notifications",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
+                title = { Text("Admin Notifications", fontWeight = FontWeight.Bold) }
             )
         }
-    ) { padding ->
-
-        Box(
+    ) { pad ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(bg)
-                .padding(padding)
-                .padding(16.dp)
+                .padding(pad)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
 
-                // Header card
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = null,
-                            tint = PrimaryBlue
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Send Notification", fontWeight = FontWeight.Bold, color = TextDark)
-                            Text(
-                                "Send to ALL users or a specific userId (UID).",
-                                color = Muted,
-                                fontSize = 12.sp
+                    OutlinedTextField(
+                        value = targetUserId,
+                        onValueChange = { targetUserId = it },
+                        label = { Text("Target User ID (ALL or UID)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = adminName,
+                        onValueChange = { adminName = it },
+                        label = { Text("Admin Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Title") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = message,
+                        onValueChange = { message = it },
+                        label = { Text("Message") },
+                        minLines = 4,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Button(
+                        onClick = {
+                            vm.createNotification(
+                                targetUserId = targetUserId.trim(),
+                                userName = adminName.trim().ifBlank { "Admin" },
+                                title = title.trim(),
+                                message = message.trim()
                             )
-                        }
-                    }
-                }
-
-                // Form card
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBg)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            showSent = true
+                            title = ""
+                            message = ""
+                        },
+                        enabled = title.isNotBlank() && message.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
+                        Text("Send Notification")
+                    }
 
-                        OutlinedTextField(
-                            value = state.targetUserId,
-                            onValueChange = vm::setTargetUserId,
-                            label = { Text("Target UserId (ALL or UID)") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        OutlinedTextField(
-                            value = state.adminName,
-                            onValueChange = vm::setAdminName,
-                            label = { Text("Admin Name") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        OutlinedTextField(
-                            value = state.title,
-                            onValueChange = vm::setTitle,
-                            label = { Text("Title / Short message") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        OutlinedTextField(
-                            value = state.details,
-                            onValueChange = vm::setDetails,
-                            label = { Text("Details (shown in popup)") },
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 3
-                        )
-
-                        OutlinedTextField(
-                            value = state.likeCount,
-                            onValueChange = vm::setLikeCount,
-                            label = { Text("Like count (optional)") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    if (error != null) {
+                        Text(error ?: "", color = Color.Red)
                     }
                 }
+            }
 
-                // Message
-                state.message?.let { m ->
-                    Card(
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Text(
-                            text = m,
-                            modifier = Modifier.padding(12.dp),
-                            color = if (m.startsWith("✅")) Color(0xFF1B7F3A) else Color.Red,
-                            fontWeight = FontWeight.SemiBold
-                        )
+            if (showSent) {
+                Snackbar(
+                    modifier = Modifier.fillMaxWidth(),
+                    action = {
+                        TextButton(onClick = { showSent = false }) { Text("OK") }
                     }
-                }
-
-                // Send button
-                Button(
-                    onClick = { vm.send() },
-                    enabled = !state.loading,
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
                 ) {
-                    Text(if (state.loading) "Sending..." else "Send Notification", color = Color.White)
+                    Text("Notification sent successfully ✅")
                 }
             }
         }

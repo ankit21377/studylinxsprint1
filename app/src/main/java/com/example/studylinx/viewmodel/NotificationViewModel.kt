@@ -28,67 +28,55 @@ class NotificationViewModel : ViewModel() {
 
     private var observeJob: Job? = null
 
-    fun startObservingGlobal() {
+    fun startForAllUsers() {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
-            repo.observeGlobalNotifications()
-                .onStart {
-                    _error.value = null
-                    _loading.value = true
-                }
-                .catch { e ->
-                    _loading.value = false
-                    _error.value = e.message ?: "Failed to load notifications"
-                }
-                .collect { list ->
-                    _notifications.value = list
-                    _loading.value = false
-                }
+            repo.observeGlobal()
+                .onStart { _loading.value = true; _error.value = null }
+                .catch { e -> _loading.value = false; _error.value = e.message }
+                .collect { list -> _notifications.value = list; _loading.value = false }
         }
     }
 
-    fun startObservingForUser(userId: String) {
+    fun startForUser(userId: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
-            repo.observeNotificationsForUser(userId)
-                .onStart {
-                    _error.value = null
-                    _loading.value = true
-                }
-                .catch { e ->
-                    _loading.value = false
-                    _error.value = e.message ?: "Failed to load notifications"
-                }
-                .collect { list ->
-                    _notifications.value = list
-                    _loading.value = false
-                }
+            repo.observeForUser(userId)
+                .onStart { _loading.value = true; _error.value = null }
+                .catch { e -> _loading.value = false; _error.value = e.message }
+                .collect { list -> _notifications.value = list; _loading.value = false }
         }
     }
 
     fun markAsRead(notificationId: String) {
-        viewModelScope.launch {
-            runCatching { repo.markAsRead(notificationId) }
-                .onFailure { _error.value = it.message ?: "Failed to mark as read" }
-        }
-    }
-
-    fun markAllAsRead(userId: String) {
-        viewModelScope.launch {
-            runCatching { repo.markAllAsReadForUser(userId) }
-                .onFailure { _error.value = it.message ?: "Failed to mark all as read" }
-        }
+        viewModelScope.launch { runCatching { repo.markAsRead(notificationId) } }
     }
 
     fun delete(notificationId: String) {
+        viewModelScope.launch { runCatching { repo.delete(notificationId) } }
+    }
+
+    // ✅ admin create
+    fun createNotification(
+        targetUserId: String,
+        userName: String,
+        title: String,
+        message: String
+    ) {
         viewModelScope.launch {
-            runCatching { repo.deleteNotification(notificationId) }
-                .onFailure { _error.value = it.message ?: "Failed to delete notification" }
+            runCatching {
+                repo.createNotification(
+                    targetUserId = targetUserId,
+                    userName = userName,
+                    title = title,
+                    message = message
+                )
+            }.onFailure { _error.value = it.message ?: "Failed to send notification" }
         }
     }
 
     override fun onCleared() {
-        super.onCleared()
         observeJob?.cancel()
+        super.onCleared()
     }
 }
