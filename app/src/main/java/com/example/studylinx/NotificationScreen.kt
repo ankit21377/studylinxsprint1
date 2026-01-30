@@ -25,26 +25,30 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.studylinx.model.NotificationItem
 import com.example.studylinx.viewmodel.NotificationViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private enum class NotificationTab { ALL, UNREAD, READ }
 
 @Composable
 fun NotificationScreen(
-    vm: NotificationViewModel = viewModel()
+    vm: NotificationViewModel = viewModel(),
+    userId: String? = null   // pass logged-in UID, if null show global
 ) {
     val allNotifications by vm.notifications.collectAsState()
     val loading by vm.loading.collectAsState()
     val error by vm.error.collectAsState()
-    val popup by vm.selectedDetail.collectAsState()
 
-    // ✅ start observing current user + global
-    LaunchedEffect(Unit) {
-        vm.startObservingForCurrentUser()
+    // ✅ start observing
+    LaunchedEffect(userId) {
+        if (userId.isNullOrBlank()) vm.startForAllUsers()
+        else vm.startForUser(userId)
     }
 
     var tab by remember { mutableStateOf(NotificationTab.ALL) }
-
     val unreadCount = remember(allNotifications) { allNotifications.count { !it.isRead } }
+
     val shown = remember(allNotifications, tab) {
         when (tab) {
             NotificationTab.ALL -> allNotifications
@@ -53,32 +57,12 @@ fun NotificationScreen(
         }
     }
 
+    // ✅ popup selected item
+    var selected by remember { mutableStateOf<NotificationItem?>(null) }
+
     val screenBg = Color(0xFFEEF5FF)
     val primaryBlue = Color(0xFF4E86D9)
     val primaryBlue2 = Color(0xFF6EA4EA)
-
-    // ✅ Popup dialog when user clicks
-    if (popup != null) {
-        AlertDialog(
-            onDismissRequest = { vm.closePopup() },
-            confirmButton = {
-                TextButton(onClick = { vm.closePopup() }) { Text("Close") }
-            },
-            title = {
-                Text(
-                    text = popup!!.title,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column {
-                    Text(popup!!.details, fontSize = 14.sp)
-                    Spacer(Modifier.height(10.dp))
-                    Text(popup!!.timeAgo, color = Color(0xFF6A7786), fontSize = 12.sp)
-                }
-            }
-        )
-    }
 
     Column(
         modifier = Modifier
@@ -86,6 +70,7 @@ fun NotificationScreen(
             .background(screenBg)
     ) {
 
+        // header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -94,20 +79,13 @@ fun NotificationScreen(
                 .padding(horizontal = 20.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            Text(
-                text = "Notifications",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text("Notifications", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(Modifier.height(16.dp))
 
         NotificationTabs(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
             selected = tab,
             unreadCount = unreadCount,
             onSelect = { tab = it }
@@ -116,12 +94,16 @@ fun NotificationScreen(
         Spacer(Modifier.height(16.dp))
 
         when {
-            loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+            loading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
 
-            error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = error ?: "Error", color = Color.Red)
+            error != null -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = error ?: "Error", color = Color.Red)
+                }
             }
 
             else -> {
@@ -130,11 +112,15 @@ fun NotificationScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    items(items = shown, key = { it.id }) { item ->
+                    items(shown, key = { it.id }) { item ->
                         NotificationCard(
                             item = item,
                             primaryBlue = primaryBlue,
-                            onClick = { vm.onNotificationClick(item) } // ✅ marks read + opens popup
+                            onClick = {
+                                selected = item
+                                // ✅ mark read when opened
+                                if (!item.isRead) vm.markAsRead(item.id)
+                            }
                         )
                     }
                     item { Spacer(Modifier.height(10.dp)) }
@@ -142,6 +128,44 @@ fun NotificationScreen(
             }
         }
     }
+
+    // ✅ popup dialog (message box)
+    if (selected != null) {
+        NotificationDetailDialog(
+            item = selected!!,
+            onDismiss = { selected = null }
+        )
+    }
+}
+
+@Composable
+private fun NotificationDetailDialog(item: NotificationItem, onDismiss: () -> Unit) {
+    val fmt = remember { SimpleDateFormat("MMM dd, yyyy • hh:mm a", Locale.getDefault()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+        title = {
+            Text(item.title.ifBlank { "Notification" }, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column {
+                Text(item.message.ifBlank { "No details available." })
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "From: ${item.userName.ifBlank { "System" }}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF6A7786)
+                )
+                Text(
+                    text = fmt.format(Date(item.createdAt)),
+                    fontSize = 12.sp,
+                    color = Color(0xFF6A7786)
+                )
+            }
+        }
+    )
 }
 
 @Composable
@@ -164,8 +188,25 @@ private fun NotificationTabs(
             .padding(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TabPill("All", selected == NotificationTab.ALL, { onSelect(NotificationTab.ALL) }, pill, selectedBlue, unselectedText, Modifier.weight(1f))
-        TabUnread(selected == NotificationTab.UNREAD, unreadCount, { onSelect(NotificationTab.UNREAD) }, pill, selectedBlue, unselectedText, Modifier.weight(1f))
+        TabPill(
+            text = "All",
+            selected = selected == NotificationTab.ALL,
+            onClick = { onSelect(NotificationTab.ALL) },
+            pillColor = pill,
+            selectedBlue = selectedBlue,
+            unselectedText = unselectedText,
+            modifier = Modifier.weight(1f)
+        )
+
+        TabUnread(
+            selected = selected == NotificationTab.UNREAD,
+            unreadCount = unreadCount,
+            onClick = { onSelect(NotificationTab.UNREAD) },
+            pillColor = pill,
+            selectedBlue = selectedBlue,
+            unselectedText = unselectedText,
+            modifier = Modifier.weight(1f)
+        )
 
         Box(
             modifier = Modifier
@@ -174,7 +215,15 @@ private fun NotificationTabs(
                 .background(Color(0xFFCAD9F4))
         )
 
-        TabPill("Read", selected == NotificationTab.READ, { onSelect(NotificationTab.READ) }, pill, selectedBlue, unselectedText, Modifier.weight(1f))
+        TabPill(
+            text = "Read",
+            selected = selected == NotificationTab.READ,
+            onClick = { onSelect(NotificationTab.READ) },
+            pillColor = pill,
+            selectedBlue = selectedBlue,
+            unselectedText = unselectedText,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -200,17 +249,7 @@ private fun TabPill(
             modifier = Modifier.fillMaxSize(),
             colors = ButtonDefaults.textButtonColors(contentColor = if (selected) selectedBlue else unselectedText)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text, fontSize = 18.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
-                Spacer(Modifier.height(6.dp))
-                Box(
-                    modifier = Modifier
-                        .height(4.dp)
-                        .width(42.dp)
-                        .clip(RoundedCornerShape(99.dp))
-                        .background(if (selected) selectedBlue else Color.Transparent)
-                )
-            }
+            Text(text, fontSize = 18.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
         }
     }
 }
@@ -247,7 +286,7 @@ private fun TabUnread(
                         .background(selectedBlue),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(unreadCount.coerceAtLeast(0).toString(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(unreadCount.toString(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -264,7 +303,7 @@ private fun NotificationCard(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(6.dp, RoundedCornerShape(18.dp))
-            .clickable { onClick() }, // ✅ click = open dialog + mark read
+            .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -281,22 +320,34 @@ private fun NotificationCard(
                     .background(Color(0xFFE9F1FF)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Notifications, contentDescription = null, tint = primaryBlue, modifier = Modifier.size(26.dp))
+                Icon(
+                    imageVector = Icons.Filled.Notifications,
+                    contentDescription = null,
+                    tint = primaryBlue,
+                    modifier = Modifier.size(26.dp)
+                )
             }
 
             Spacer(Modifier.width(14.dp))
 
-            Column(Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (item.userName.isNotBlank()) "${item.userName}: ${item.action}" else item.action,
+                    text = item.title.ifBlank { "Notification" },
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF1B2430),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = item.message.ifBlank { "" },
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF445466),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(6.dp))
-                Text(item.timeAgo, fontSize = 12.sp, color = Color(0xFF6A7786))
             }
 
             if (!item.isRead) {
