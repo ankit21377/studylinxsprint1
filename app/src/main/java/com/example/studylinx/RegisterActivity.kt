@@ -2,45 +2,26 @@ package com.example.studylinx
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Patterns
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -60,95 +41,106 @@ class RegisterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            RegisterBody()
-        }
+        setContent { RegisterBody() }
     }
 }
 
 @Composable
-fun RegisterBody(){
-    var userViewModel = remember { UserViewModel(UserRepoImpl()) }
-    var firstname by remember {mutableStateOf("")}
-    var lastname by remember {mutableStateOf("")}
-    var email by remember {mutableStateOf("")}
-    var password by remember {mutableStateOf("")}
-    var visibility by remember {mutableStateOf(false)}
-    var confirm by remember {mutableStateOf("")}
+fun RegisterBody() {
+
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+
+    var firstname by remember { mutableStateOf("") }
+    var lastname by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
+    var visibility by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
     val activity = context as RegisterActivity
     val terms = true
+
+    fun goToLoginClearStack() {
+        val i = Intent(context, LoginActivity::class.java)
+        i.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        context.startActivity(i)
+        activity.finish()
+    }
 
     Scaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues = padding)
+                .padding(padding)
                 .background(White)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = {
-                    val intent = Intent(context, LoginActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                    context.startActivity(intent)
-                    activity.finish()
-                }) {
+                IconButton(onClick = { goToLoginClearStack() }) {
                     Icon(
                         painter = painterResource(R.drawable.baseline_arrow_back_ios_24),
                         contentDescription = "Back to Login",
                     )
                 }
             }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Image(
-                    painter = painterResource(R.drawable.logo1),
-                    contentDescription = null,
+                Image(painter = painterResource(R.drawable.logo1), contentDescription = null)
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("reg_title"),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Create an Account",
+                    style = TextStyle(
+                        color = Color(0xFF67A1E4),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 25.sp
+                    )
                 )
             }
-            Row(modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically){
-                Text("Create an Account",
-                    style = TextStyle(color = Color(0xFF67A1E4),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 25.sp))
-            }
+
             Row {
                 Card(
                     modifier = Modifier
                         .height(320.dp)
                         .padding(10.dp),
                     shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF67A1E4))) {
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF67A1E4))
+                ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(
-                                horizontal = 16.dp,
-                                vertical = 24.dp
-                            ) // Add padding inside the card
+                            .padding(horizontal = 16.dp, vertical = 24.dp)
                     ) {
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp), // More modern way to add space
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            1
-                            // --- First Name Field ---
+
                             OutlinedTextField(
                                 value = firstname,
-                                onValueChange = { data -> firstname = data },
+                                onValueChange = { firstname = it },
                                 shape = RoundedCornerShape(12.dp),
                                 placeholder = { Text("First/MiddleName") },
-                                modifier = Modifier.weight(1f), // <-- KEY CHANGE
-                                singleLine = true, // Good for names
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("reg_firstname"),
+                                singleLine = true,
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = White,
                                     unfocusedContainerColor = White,
@@ -157,13 +149,14 @@ fun RegisterBody(){
                                 )
                             )
 
-                            // --- Last Name Field ---
                             OutlinedTextField(
                                 value = lastname,
-                                onValueChange = { data -> lastname = data },
+                                onValueChange = { lastname = it },
                                 shape = RoundedCornerShape(12.dp),
                                 placeholder = { Text("Lastname") },
-                                modifier = Modifier.weight(1f), // <-- KEY CHANGE
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("reg_lastname"),
                                 singleLine = true,
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = White,
@@ -173,124 +166,86 @@ fun RegisterBody(){
                                 )
                             )
                         }
+
                         Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Start,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedTextField(
-                                value = email,
-                                onValueChange = { data ->
-                                    email = data
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Email
-                                ),
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = {
-                                    Text("abc@gmail.com")
-                                },
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = White,
-                                    unfocusedContainerColor = White,
-                                    focusedIndicatorColor = White,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                )
-                            )
 
-                        }
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            shape = RoundedCornerShape(12.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("reg_email"),
+                            placeholder = { Text("abc@gmail.com") },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = White,
+                                unfocusedContainerColor = White,
+                                focusedIndicatorColor = White,
+                                unfocusedIndicatorColor = Color.Transparent
+                            )
+                        )
+
                         Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Start,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedTextField(
-                                value = password,
-                                onValueChange = { data ->
-                                    password = data
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                visualTransformation = if (!visibility) PasswordVisualTransformation() else VisualTransformation.None,
-                                trailingIcon = {
-                                    IconButton(onClick = {
-                                        visibility = !visibility
-                                    }) {
-                                        Icon(
-                                            painter = if (visibility) painterResource(R.drawable.baseline_visibility_24)
-                                            else
-                                                painterResource(R.drawable.baseline_visibility_off_24),
 
-                                            contentDescription = null
-                                        )
-                                    }
-
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = {
-                                    Text("Password")
-                                },
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = White,
-                                    unfocusedContainerColor = White,
-                                    focusedIndicatorColor = White,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            shape = RoundedCornerShape(12.dp),
+                            visualTransformation = if (!visibility) PasswordVisualTransformation() else VisualTransformation.None,
+                            trailingIcon = {
+                                IconButton(onClick = { visibility = !visibility }) {
+                                    Icon(
+                                        painter = if (visibility) painterResource(R.drawable.baseline_visibility_24)
+                                        else painterResource(R.drawable.baseline_visibility_off_24),
+                                        contentDescription = null
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("reg_password"),
+                            placeholder = { Text("Password") },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = White,
+                                unfocusedContainerColor = White,
+                                focusedIndicatorColor = White,
+                                unfocusedIndicatorColor = Color.Transparent
                             )
+                        )
 
-                        }
                         Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Start,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedTextField(
-                                value = confirm,
-                                onValueChange = { data ->
-                                    confirm = data
-                                },
 
-                                shape = RoundedCornerShape(12.dp),
-                                visualTransformation = if (!visibility) PasswordVisualTransformation() else VisualTransformation.None,
-                                trailingIcon = {
-                                    IconButton(onClick = {
-                                        visibility = !visibility
-                                    }) {
-                                        Icon(
-                                            painter = if (visibility)
-                                                painterResource(R.drawable.baseline_visibility_24)
-                                            else
-                                                painterResource(R.drawable.baseline_visibility_off_24),
-                                            contentDescription = null
-                                        )
-                                    }
-
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                placeholder = {
-                                    Text("Confirm Password")
-                                },
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = White,
-                                    unfocusedContainerColor = White,
-                                    focusedIndicatorColor = White,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                )
+                        OutlinedTextField(
+                            value = confirm,
+                            onValueChange = { confirm = it },
+                            shape = RoundedCornerShape(12.dp),
+                            visualTransformation = if (!visibility) PasswordVisualTransformation() else VisualTransformation.None,
+                            trailingIcon = {
+                                IconButton(onClick = { visibility = !visibility }) {
+                                    Icon(
+                                        painter = if (visibility) painterResource(R.drawable.baseline_visibility_24)
+                                        else painterResource(R.drawable.baseline_visibility_off_24),
+                                        contentDescription = null
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("reg_confirm"),
+                            placeholder = { Text("Confirm Password") },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = White,
+                                unfocusedContainerColor = White,
+                                focusedIndicatorColor = White,
+                                unfocusedIndicatorColor = Color.Transparent
                             )
-                        }
-
+                        )
                     }
-
                 }
-
-
             }
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+
+            Row(modifier = Modifier.fillMaxWidth()) {
                 Button(
                     onClick = {
                         if (!terms) {
@@ -305,26 +260,25 @@ fun RegisterBody(){
                             Toast.makeText(context, "Email and password required", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
+                        if (!Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) {
+                            Toast.makeText(context, "Enter a valid email", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
 
-                        // call ViewModel instance functions
-                        userViewModel.register(email, password) { success, message, userId ->
+                        userViewModel.register(email.trim(), password.trim()) { success, message, userId ->
                             if (success && userId != null) {
                                 val model = UserModel(
                                     userId = userId,
-                                    firstname = firstname,
-                                    lastname = lastname,
-                                    email = email,
-                                    password = password
+                                    firstname = firstname.trim(),
+                                    lastname = lastname.trim(),
+                                    email = email.trim(),
+                                    password = "" // ✅ don’t store plain password
                                 )
 
                                 userViewModel.addUserToDatabase(userId, model) { ok, msg ->
                                     if (ok) {
                                         Toast.makeText(context, msg ?: "Registered successfully", Toast.LENGTH_SHORT).show()
-
-                                        val intent = Intent(context, LoginActivity::class.java)
-                                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                                        context.startActivity(intent)
-                                        activity.finish()
+                                        goToLoginClearStack()
                                     } else {
                                         Toast.makeText(context, msg ?: "Failed to save user", Toast.LENGTH_SHORT).show()
                                     }
@@ -334,47 +288,38 @@ fun RegisterBody(){
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Blue
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 6.dp
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
                     shape = RoundedCornerShape(25.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(100.dp)
-                        .padding(horizontal = 40.dp, vertical = 20.dp),
-                ) { Text("Sign Up") }
+                        .padding(horizontal = 40.dp, vertical = 20.dp)
+                        .testTag("reg_signup"),
+                ) {
+                    Text("Sign Up")
+                }
             }
+
             Spacer(modifier = Modifier.height(10.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
-
-            ){
+            ) {
                 val annotatedString = buildAnnotatedString {
                     append("have an account? ")
                     pushStringAnnotation(tag = "SignIn", annotation = "SignIn")
-                    withStyle(style = SpanStyle(color = Blue)) {
-                        append("Sign In")
-                    }
+                    withStyle(style = SpanStyle(color = Blue)) { append("Sign In") }
                     pop()
                 }
-                ClickableText(text = annotatedString, onClick = { offset ->
-                    annotatedString.getStringAnnotations(tag = "SignIn", start = offset, end = offset)
-                        .firstOrNull()?.let {
-                            context.startActivity(Intent(context, LoginActivity::class.java))
-                        }
-                })
-
+                ClickableText(
+                    modifier = Modifier.testTag("reg_sign_in_link"),
+                    text = annotatedString,
+                    onClick = { goToLoginClearStack() }
+                )
             }
-
-
-
         }
     }
-
 }
-

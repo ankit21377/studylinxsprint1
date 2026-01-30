@@ -1,13 +1,11 @@
+// File: com/example/studylinx/repo/HomeRepoImpl.kt
 package com.example.studylinx.repo
 
-
-
-import com.example.studylinx.model.Event
-import com.example.studylinx.model.HomeSummary
 import com.example.studylinx.model.*
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -27,6 +25,7 @@ class HomeRepoImpl(
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
+
                 val list = snap?.documents?.map { d ->
                     Country(
                         id = d.id,
@@ -34,8 +33,10 @@ class HomeRepoImpl(
                         flagUrl = d.getString("flagUrl") ?: ""
                     )
                 } ?: emptyList()
+
                 trySend(list)
             }
+
         awaitClose { reg.remove() }
     }
 
@@ -47,6 +48,7 @@ class HomeRepoImpl(
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
+
                 val list = snap?.documents?.map { d ->
                     University(
                         id = d.id,
@@ -54,24 +56,30 @@ class HomeRepoImpl(
                         city = d.getString("city") ?: "",
                         country = d.getString("country") ?: "",
                         description = d.getString("description") ?: "",
-                        imageUrl = d.getString("imageUrl") ?: ""
+                        imageUrl = d.getString("imageUrl") ?: "",
+                        locationUrl = d.getString("locationUrl") ?: "",
+                        courses = (d.get("courses") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
                     )
                 } ?: emptyList()
+
                 trySend(list)
             }
+
         awaitClose { reg.remove() }
     }
 
+    // ✅ Uses SAME Appointment model fields: counselorName + dateTimeMillis
     override fun observeUpcomingAppointment(): Flow<Appointment?> = callbackFlow {
         val reg = db.collection("users").document(uid())
             .collection("appointments")
-            .orderBy("dateTime")
+            .orderBy("dateTime") // Firestore field name
             .limit(1)
             .addSnapshotListener { snap, err ->
                 if (err != null) {
                     trySend(null)
                     return@addSnapshotListener
                 }
+
                 val doc = snap?.documents?.firstOrNull()
                 if (doc == null) {
                     trySend(null)
@@ -84,12 +92,14 @@ class HomeRepoImpl(
                 trySend(
                     Appointment(
                         id = doc.id,
+                        userId = uid(),
                         counselorName = doc.getString("counselorName") ?: "",
-                        status = doc.getString("status") ?: "Pending",
-                        dateTimeMillis = millis
+                        dateTimeMillis = millis,
+                        status = doc.getString("status") ?: "Pending"
                     )
                 )
             }
+
         awaitClose { reg.remove() }
     }
 
@@ -101,9 +111,10 @@ class HomeRepoImpl(
                     trySend(ApplicationProgress())
                     return@addSnapshotListener
                 }
-                val currentStep = (doc?.getLong("currentStep") ?: 0L).toInt()
 
+                val currentStep = (doc?.getLong("currentStep") ?: 0L).toInt()
                 val steps = doc?.get("steps") as? Map<*, *> ?: emptyMap<String, Any>()
+
                 val submitted = steps["submitted"] as? Boolean ?: false
                 val inReview = steps["inReview"] as? Boolean ?: false
                 val interview = steps["interview"] as? Boolean ?: false
@@ -119,6 +130,7 @@ class HomeRepoImpl(
                     )
                 )
             }
+
         awaitClose { reg.remove() }
     }
 
@@ -133,15 +145,16 @@ class HomeRepoImpl(
         val progressDoc = db.collection("users").document(uid())
             .collection("progress").document("main")
 
-        // update boolean
+        // merge update step boolean
         progressDoc.set(
             mapOf("steps" to mapOf(stepKey to completed)),
-            com.google.firebase.firestore.SetOptions.merge()
+            SetOptions.merge()
         ).await()
 
-        // recompute currentStep (simple rule: highest completed consecutive)
+        // recompute currentStep (simple rule)
         val snapshot = progressDoc.get().await()
         val steps = snapshot.get("steps") as? Map<*, *> ?: emptyMap<String, Any>()
+
         val s0 = steps["submitted"] as? Boolean ?: false
         val s1 = steps["inReview"] as? Boolean ?: false
         val s2 = steps["interview"] as? Boolean ?: false
@@ -155,22 +168,25 @@ class HomeRepoImpl(
             else -> 0
         }
 
-        progressDoc.set(mapOf("currentStep" to newStep), com.google.firebase.firestore.SetOptions.merge()).await()
+        progressDoc.set(mapOf("currentStep" to newStep), SetOptions.merge()).await()
     }
 
     override suspend fun seedIfEmpty() {
-        // Seed countries if none
+        // Seed countries if empty
         val countriesSnap = db.collection("countries").limit(1).get().await()
         if (countriesSnap.isEmpty) {
             val batch = db.batch()
+
             fun add(id: String, name: String, flagUrl: String) {
                 batch.set(db.collection("countries").document(id), mapOf("name" to name, "flagUrl" to flagUrl))
             }
+
             add("canada", "Canada", "https://flagcdn.com/w1280/ca.png")
             add("usa", "USA", "https://flagcdn.com/w1280/us.png")
             add("australia", "Australia", "https://flagcdn.com/w1280/au.png")
             add("uk", "United Kingdom", "https://flagcdn.com/w1280/gb.png")
             add("japan", "Japan", "https://flagcdn.com/w1280/jp.png")
+
             batch.commit().await()
         }
 
@@ -191,14 +207,14 @@ class HomeRepoImpl(
             ).await()
         }
 
-        // Seed appointment if none (optional)
+        // Seed appointment if none
         val apptSnap = db.collection("users").document(uid()).collection("appointments").limit(1).get().await()
         if (apptSnap.isEmpty) {
             db.collection("users").document(uid()).collection("appointments").add(
                 mapOf(
                     "counselorName" to "Mr. Smith",
                     "status" to "Confirmed",
-                    "dateTime" to Timestamp.now()
+                    "dateTime" to Timestamp.now()  // ✅ field must be "dateTime"
                 )
             ).await()
         }

@@ -12,24 +12,19 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import com.google.firebase.auth.FirebaseAuth
 
-// ✅ Move this OUTSIDE composable
 data class NavItem(val icon: Int, val label: String)
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            DashboardBody()
-        }
+        setContent { DashboardBody() }
     }
 }
 
@@ -45,7 +40,11 @@ fun DashboardBody() {
 
     var selectedIndex by remember { mutableStateOf(0) }
 
+    // ✅ logged-in UID (for NotificationScreen user filter)
+    val uid = remember { FirebaseAuth.getInstance().currentUser?.uid }
+
     Scaffold(
+        modifier = Modifier.testTag("dashboard"),
         bottomBar = {
             NavigationBar {
                 listItems.forEachIndexed { index, item ->
@@ -73,7 +72,7 @@ fun DashboardBody() {
             when (selectedIndex) {
                 0 -> HomeScreen()
                 1 -> SearchScreen()
-                2 -> NotificationScreen()
+                2 -> NotificationScreen(userId = uid) // ✅ IMPORTANT FIX
                 3 -> ProfileScreen()
                 else -> HomeScreen()
             }

@@ -1,9 +1,12 @@
+// File: com/example/studylinx/SearchScreen.kt
 package com.example.studylinx
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,7 +24,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.studylinx.model.Country
 import com.example.studylinx.model.University
 import com.example.studylinx.viewmodel.SearchViewModel
@@ -42,8 +47,20 @@ fun SearchScreen(
     val ctx = LocalContext.current
     val state by vm.ui.collectAsState()
 
+    // ✅ build a course list from filtered universities (no new DB needed)
+    val courses = remember(state.filteredUniversities) {
+        state.filteredUniversities
+            .flatMap { it.courses }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
+            .take(12)
+    }
+
     Column(
         modifier = Modifier
+            .testTag("search_screen")
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(BgTop, BgBottom)))
     ) {
@@ -79,19 +96,35 @@ fun SearchScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Only Countries category (like your design)
-        Row(
+        // ✅ Countries + Courses cards SIDE BY SIDE
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp),
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            CategoryCard(title = "Countries")
+            item {
+                CategoryCard(
+                    title = "Countries",
+                    onClick = {
+                        // ✅ open existing CountryActivity
+                        ctx.startActivity(Intent(ctx, CountryActivity::class.java))
+                    }
+                )
+            }
+            item {
+                CategoryCard(
+                    title = "Courses",
+                    onClick = {
+                        // ✅ open existing CoursesActivity
+                        ctx.startActivity(Intent(ctx, CoursesActivity::class.java))
+                    }
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
 
-        // List section
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
@@ -110,7 +143,10 @@ fun SearchScreen(
             // Loading / error states
             if (state.loading) {
                 item {
-                    Box(Modifier.fillMaxWidth().padding(vertical = 18.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.fillMaxWidth().padding(vertical = 18.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         CircularProgressIndicator(color = HeaderBlue1)
                     }
                 }
@@ -120,17 +156,49 @@ fun SearchScreen(
                 item { Text(err, color = Color.Red) }
             }
 
-            // Countries from RTDB
+            // ✅ Countries list (click country -> open your existing CountryActivity)
             items(state.filteredCountries, key = { it.id }) { country ->
-                DestinationRow(country = country) {
-                    // ✅ click country -> open UniversityActivity filtered by countryId
-                    val i = Intent(ctx, UniversityActivity::class.java)
-                    i.putExtra(UniversityActivity.EXTRA_COUNTRY_ID, country.id) // must exist in UniversityActivity
-                    ctx.startActivity(i)
+                DestinationRow(
+                    country = country,
+                    onClick = {
+                        // you can open CountryActivity list,
+                        // OR open directly UniversityActivity filtered by country
+                        // Since you asked: open CountryActivity
+                        ctx.startActivity(Intent(ctx, CountryActivity::class.java))
+                    }
+                )
+            }
+
+            // ✅ Courses chips (optional) -> open UniversitiesByCourseActivity
+            if (courses.isNotEmpty()) {
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Popular Courses",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = TextDark
+                    )
+                }
+
+                item {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(courses) { course ->
+                            CourseChip(
+                                title = course,
+                                onClick = {
+                                    ctx.startActivity(
+                                        Intent(ctx, UniversitiesByCourseActivity::class.java)
+                                            .putExtra("courseName", course)
+                                    )
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
-            // Optional: matching universities preview when query typed
+            // ✅ Matching universities list (click -> open UniversityActivity or details if you have)
             if (state.filteredUniversities.isNotEmpty()) {
                 item {
                     Spacer(Modifier.height(8.dp))
@@ -143,7 +211,11 @@ fun SearchScreen(
                 }
 
                 items(state.filteredUniversities, key = { it.id }) { uni ->
-                    UniversitySearchRow(uni = uni)
+                    UniversitySearchRow(uni = uni) {
+                        // If you have UniversityDetailsActivity, open that.
+                        // Otherwise open UniversityActivity.
+                        ctx.startActivity(Intent(ctx, UniversityActivity::class.java))
+                    }
                 }
             }
 
@@ -206,11 +278,12 @@ private fun SearchBar(
 }
 
 @Composable
-private fun CategoryCard(title: String) {
+private fun CategoryCard(title: String, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .width(170.dp)
-            .height(130.dp),
+            .height(130.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -234,6 +307,26 @@ private fun CategoryCard(title: String) {
 }
 
 @Composable
+private fun CourseChip(title: String, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        shadowElevation = 1.dp,
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            color = TextDark,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
 private fun DestinationRow(
     country: Country,
     onClick: () -> Unit
@@ -252,13 +345,18 @@ private fun DestinationRow(
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            // ✅ Country logo/flag
+            AsyncImage(
+                model = country.flagUrl,
+                contentDescription = country.name,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFDFF0FF))
             )
+
             Spacer(Modifier.width(14.dp))
+
             Text(
                 text = country.name,
                 fontSize = 16.sp,
@@ -270,9 +368,14 @@ private fun DestinationRow(
 }
 
 @Composable
-private fun UniversitySearchRow(uni: University) {
+private fun UniversitySearchRow(
+    uni: University,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {

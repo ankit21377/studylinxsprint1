@@ -5,5 +5,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface UniversityRepo {
     fun observeUniversities(): Flow<List<University>>
-    suspend fun addUniversity(u: University)
+    suspend fun getUniversityById(id: String): University?
 }

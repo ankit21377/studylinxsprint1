@@ -13,21 +13,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.studylinx.model.Appointment
 import com.example.studylinx.model.Country
 import com.example.studylinx.model.University
 import com.example.studylinx.viewmodel.HomeViewModel
@@ -35,7 +35,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// ---------- DocumentActivity palette ----------
+// ---------- palette ----------
 private val BgTop = Color(0xFFF6FAFF)
 private val BgBottom = Color(0xFFEAF2FF)
 private val PrimaryBlue = Color(0xFF2F79E6)
@@ -53,64 +53,61 @@ fun HomeScreen(
 
     Box(
         modifier = Modifier
+            .testTag("home_screen")
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(BgTop, BgBottom)))
     ) {
+
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // 1) Upcoming Appointment
+            // ✅ Upcoming Appointment
             item {
                 UpcomingAppointmentCard(
-                    dateTimeMillis = state.upcomingAppointmentMillis,
-                    counselorName = state.upcomingAppointmentCounselor,
-                    statusText = state.upcomingAppointmentStatus,
+                    appointment = state.upcomingAppointment,
                     onMoreDetails = {
-                        // ✅ open your AppointmentActivity
                         ctx.startActivity(Intent(ctx, AppointmentActivity::class.java))
                     }
                 )
             }
 
-            // 2) Quick Actions
+            // ✅ Quick Actions (Explore removed to avoid errors)
             item {
                 QuickActionsSection(
                     onBookDate = { ctx.startActivity(Intent(ctx, AppointmentActivity::class.java)) },
-                    onExplore = { ctx.startActivity(Intent(ctx, UniversityActivity::class.java)) },
                     onUpload = { ctx.startActivity(Intent(ctx, DocumentActivity::class.java)) }
                 )
             }
 
-            // 3) Countries LazyRow
+            // ✅ Countries
             item {
                 CountriesSection(
-                    loading = state.loadingCountries,
+                    loading = state.loading,
                     countries = state.countries,
-                    error = state.errorCountries,
+                    error = state.error,
                     onCountryClick = { country ->
-                        // ✅ if you want: show filtered universities by country
-                        // Option A: open UniversityActivity (and filter using intent extra)
                         val i = Intent(ctx, UniversityActivity::class.java)
-                        i.putExtra(UniversityActivity.EXTRA_COUNTRY_ID, country.name) // or country.id if you use id
+                        i.putExtra(UniversityActivity.EXTRA_COUNTRY_ID, country.id) // ✅ use id
                         ctx.startActivity(i)
                     }
                 )
             }
 
-            // 4) Universities LazyColumn preview (top 4)
+            // ✅ Universities preview (click opens details properly)
             item {
                 UniversitiesSection(
-                    loading = state.loadingUniversities,
+                    loading = state.loading,
                     universities = state.universities,
-                    error = state.errorUniversities,
+                    error = state.error,
                     onViewAll = {
                         ctx.startActivity(Intent(ctx, UniversityActivity::class.java))
                     },
-                    onUniversityClick = {
-                        // For now open list screen; later you can make details screen.
-                        ctx.startActivity(Intent(ctx, UniversityActivity::class.java))
+                    onUniversityClick = { uni ->
+                        val i = Intent(ctx, UniversityDetailsActivity::class.java)
+                        i.putExtra(UniversityActivity.EXTRA_UNI_ID, uni.id)
+                        ctx.startActivity(i)
                     }
                 )
             }
@@ -118,17 +115,19 @@ fun HomeScreen(
     }
 }
 
-/* ---------------- Upcoming Appointment Card (Attractive + More details) ---------------- */
+/* ---------------- Upcoming Appointment ---------------- */
 
 @Composable
 private fun UpcomingAppointmentCard(
-    dateTimeMillis: Long,
-    counselorName: String,
-    statusText: String,
+    appointment: Appointment?,
     onMoreDetails: () -> Unit
 ) {
     val fmt = SimpleDateFormat("MMM dd, yyyy • hh:mm a", Locale.getDefault())
-    val timeText = if (dateTimeMillis > 0) fmt.format(Date(dateTimeMillis)) else "No upcoming appointment"
+    val has = appointment != null && appointment.startMillis > 0L
+
+    val timeText = if (has) fmt.format(Date(appointment!!.startMillis)) else "No upcoming appointment"
+    val titleText = if (has) appointment!!.title.ifBlank { "Appointment" } else "No Appointment"
+    val statusText = if (has) appointment!!.status.ifBlank { "Pending" } else "Pending"
 
     Card(
         shape = RoundedCornerShape(22.dp),
@@ -143,6 +142,7 @@ private fun UpcomingAppointmentCard(
                 .padding(16.dp)
         ) {
             Column {
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Upcoming Appointment",
@@ -152,13 +152,24 @@ private fun UpcomingAppointmentCard(
                         modifier = Modifier.weight(1f)
                     )
                     AssistChip(
-                        onClick = {},
-                        label = { Text(statusText.ifBlank { "Pending" }, color = PrimaryBlue, fontSize = 12.sp) },
+                        onClick = { },
+                        label = { Text(statusText, color = PrimaryBlue, fontSize = 12.sp) },
                         colors = AssistChipDefaults.assistChipColors(containerColor = Color.White)
                     )
                 }
 
                 Spacer(Modifier.height(10.dp))
+
+                Text(
+                    text = titleText,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(Modifier.height(8.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color.White)
@@ -166,18 +177,8 @@ private fun UpcomingAppointmentCard(
                     Text(timeText, color = Color.White, fontWeight = FontWeight.Bold)
                 }
 
-                if (counselorName.isNotBlank()) {
-                    Spacer(Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
-                        Spacer(Modifier.width(8.dp))
-                        Text("with $counselorName", color = Color.White)
-                    }
-                }
-
                 Spacer(Modifier.height(12.dp))
 
-                // ✅ More details -> AppointmentActivity
                 Surface(
                     color = Color.White,
                     shape = RoundedCornerShape(14.dp),
@@ -208,21 +209,23 @@ private fun UpcomingAppointmentCard(
 @Composable
 private fun QuickActionsSection(
     onBookDate: () -> Unit,
-    onExplore: () -> Unit,
     onUpload: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         QuickActionItem("Book Date", Icons.Default.DateRange, onBookDate)
-        QuickActionItem("Explore", Icons.Default.LocationOn, onExplore)
         QuickActionItem("Upload", Icons.Default.UploadFile, onUpload)
     }
 }
 
 @Composable
-private fun QuickActionItem(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+private fun QuickActionItem(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
@@ -239,7 +242,7 @@ private fun QuickActionItem(title: String, icon: androidx.compose.ui.graphics.ve
     }
 }
 
-/* ---------------- Countries (LazyRow) ---------------- */
+/* ---------------- Countries ---------------- */
 
 @Composable
 private fun CountriesSection(
@@ -253,7 +256,7 @@ private fun CountriesSection(
         Spacer(Modifier.height(10.dp))
 
         when {
-            loading -> {
+            loading && countries.isEmpty() -> {
                 Box(Modifier.fillMaxWidth().padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = PrimaryBlue)
                 }
@@ -300,7 +303,7 @@ private fun CountryCard(country: Country, onClick: () -> Unit) {
     }
 }
 
-/* ---------------- Universities (LazyColumn preview) ---------------- */
+/* ---------------- Universities ---------------- */
 
 @Composable
 private fun UniversitiesSection(
@@ -325,7 +328,7 @@ private fun UniversitiesSection(
         Spacer(Modifier.height(8.dp))
 
         when {
-            loading -> {
+            loading && universities.isEmpty() -> {
                 Box(Modifier.fillMaxWidth().padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = PrimaryBlue)
                 }
