@@ -1,8 +1,10 @@
+// File: com/example/studylinx/repo/NotificationRepoImpl.kt
 package com.example.studylinx.repo
 
 import com.example.studylinx.model.NotificationItem
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -12,78 +14,102 @@ class NotificationRepoImpl(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : NotificationRepo {
 
-    private val collection = db.collection("notifications")
+    private fun globalRef() = db.collection("notifications")
+    private fun userRef(userId: String) = db.collection("users").document(userId).collection("notifications")
 
-    override fun observeGlobalNotifications(): Flow<List<NotificationItem>> = callbackFlow {
-        val listener = collection
+    override fun observeGlobal(): Flow<List<NotificationItem>> = callbackFlow {
+        val reg = globalRef()
             .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snap, e ->
-                if (e != null) {
-                    close(e)
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    trySend(emptyList())
                     return@addSnapshotListener
                 }
 
-                val items = snap?.documents?.map { doc ->
+                val list = snap?.documents?.map { d ->
                     NotificationItem(
-                        id = doc.id,
-                        userId = doc.getString("userId") ?: "",
-                        userName = doc.getString("userName") ?: "",
-                        action = doc.getString("action") ?: "",
-                        isRead = doc.getBoolean("isRead") ?: false,
-                        createdAt = doc.getLong("createdAt") ?: 0L
+                        id = d.id,
+                        targetUserId = d.getString("targetUserId") ?: "",
+                        userName = d.getString("userName") ?: "",
+                        title = d.getString("title") ?: "",
+                        message = d.getString("message") ?: "",
+                        createdAt = d.getLong("createdAt") ?: 0L,
+                        isRead = d.getBoolean("isRead") ?: false   // ✅
                     )
                 } ?: emptyList()
 
-                trySend(items).isSuccess
+                trySend(list)
             }
 
-        awaitClose { listener.remove() }
+        awaitClose { reg.remove() }
     }
 
-    override fun observeNotificationsForUser(userId: String): Flow<List<NotificationItem>> = callbackFlow {
-        val listener = collection
-            .whereEqualTo("userId", userId)
+    override fun observeForUser(userId: String): Flow<List<NotificationItem>> = callbackFlow {
+        if (userId.isBlank()) {
+            trySend(emptyList())
+            awaitClose { }
+            return@callbackFlow
+        }
+
+        val reg = userRef(userId)
             .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snap, e ->
-                if (e != null) {
-                    close(e)
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    trySend(emptyList())
                     return@addSnapshotListener
                 }
 
-                val items = snap?.documents?.map { doc ->
+                val list = snap?.documents?.map { d ->
                     NotificationItem(
-                        id = doc.id,
-                        userId = doc.getString("userId") ?: "",
-                        userName = doc.getString("userName") ?: "",
-                        action = doc.getString("action") ?: "",
-                        isRead = doc.getBoolean("isRead") ?: false,
-                        createdAt = doc.getLong("createdAt") ?: 0L
+                        id = d.id,
+                        targetUserId = userId,
+                        userName = d.getString("userName") ?: "",
+                        title = d.getString("title") ?: "",
+                        message = d.getString("message") ?: "",
+                        createdAt = d.getLong("createdAt") ?: 0L,
+                        isRead = d.getBoolean("isRead") ?: false  // ✅
                     )
                 } ?: emptyList()
 
-                trySend(items).isSuccess
+                trySend(list)
             }
 
-        awaitClose { listener.remove() }
+        awaitClose { reg.remove() }
     }
 
-    override suspend fun markAsRead(notificationId: String) {
-        collection.document(notificationId).update("isRead", true).await()
-    }
-
-    override suspend fun markAllAsReadForUser(userId: String) {
-        val snap = collection
-            .whereEqualTo("userId", userId)
-            .whereEqualTo("isRead", false)
-            .get()
+    override suspend fun markAsRead(userId: String, notificationId: String) {
+        if (userId.isBlank() || notificationId.isBlank()) return
+        userRef(userId).document(notificationId)
+            .set(mapOf("isRead" to true), SetOptions.merge())
             .await()
-
-        val batch = db.batch()
-        for (doc in snap.documents) batch.update(doc.reference, "isRead", true)
-        batch.commit().await()
     }
 
-    override suspend fun deleteNotification(notificationId: String) {
-        collection.document(notificationId).delete().await()
+    override suspend fun delete(userId: String, notificationId: String) {
+        if (userId.isBlank() || notificationId.isBlank()) return
+        userRef(userId).document(notificationId).delete().await()
+    }
+
+    override suspend fun createNotification(
+        targetUserId: String,
+        userName: String,
+        title: String,
+        message: String
+    ) {
+        val now = System.currentTimeMillis()
+
+        val data = mapOf(
+            "targetUserId" to targetUserId.trim(),
+            "userName" to userName.trim(),
+            "title" to title.trim(),
+            "message" to message.trim(),
+            "createdAt" to now,
+            "isRead" to false  // ✅
+        )
+
+        if (targetUserId.isNotBlank()) {
+            userRef(targetUserId).add(data).await()
+        } else {
+            globalRef().add(data).await()
+        }
     }
 }

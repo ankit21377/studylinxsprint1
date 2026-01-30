@@ -1,12 +1,12 @@
+// File: com/example/studylinx/model/NotificationItem.kt
 package com.example.studylinx.model
 
 data class NotificationItem(
     val id: String = "",
-    val userId: String = "",
+    val targetUserId: String = "",     // optional
     val userName: String = "",
-    val action: String = "",
-    val timeAgo: String = "",
-    val likeCount: Int = 0,
-    val isRead: Boolean = false,
-    val createdAt: Long = System.currentTimeMillis()
+    val title: String = "",
+    val message: String = "",
+    val createdAt: Long = 0L,
+    val isRead: Boolean = false        // ✅ MATCHES YOUR UI
 )

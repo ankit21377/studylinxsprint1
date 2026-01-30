@@ -5,23 +5,20 @@ import com.google.firebase.database.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.tasks.await
 
 class UniversityRepoImpl(
-    private val db: DatabaseReference =
-        FirebaseDatabase.getInstance().reference.child("universities")
+    private val ref: DatabaseReference =
+        FirebaseDatabase.getInstance().reference.child("universities") // ✅ lowercase
 ) : UniversityRepo {
 
     override fun observeUniversities(): Flow<List<University>> = callbackFlow {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val list = snapshot.children.mapNotNull { snap ->
-                    snap.getValue(University::class.java)
-                        ?.copy(id = snap.key ?: "")
+                    snap.getValue(University::class.java)?.copy(id = snap.key ?: "")
                 }
-                trySend(list)
+                trySend(list).isSuccess
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -29,18 +26,13 @@ class UniversityRepoImpl(
             }
         }
 
-        db.addValueEventListener(listener)
-        awaitClose { db.removeEventListener(listener) }
+        ref.addValueEventListener(listener)
+        awaitClose { ref.removeEventListener(listener) }
     }
 
-    override suspend fun addUniversity(u: University) {
-        suspendCancellableCoroutine<Unit> { cont ->
-            val key = db.push().key ?: return@suspendCancellableCoroutine
-            val data = u.copy(id = key)
-
-            db.child(key).setValue(data)
-                .addOnSuccessListener { cont.resume(Unit) }
-                .addOnFailureListener { e -> cont.resumeWithException(e) }
-        }
+    override suspend fun getUniversityById(id: String): University? {
+        if (id.isBlank()) return null
+        val snap = ref.child(id).get().await()
+        return snap.getValue(University::class.java)?.copy(id = id)
     }
 }
