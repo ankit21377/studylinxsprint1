@@ -1,52 +1,74 @@
+// File: com/example/studylinx/viewmodel/AppointmentViewModel.kt
 package com.example.studylinx.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.studylinx.model.Appointment
 import com.example.studylinx.repo.AppointmentRepo
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import java.time.*
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 enum class AppointmentFilter { ALL, UPCOMING, PAST }
 
-data class AppointmentsUiState(
+data class AppointmentUiState(
     val userId: String = "",
+    val loading: Boolean = false,
+    val error: String? = null,
+
     val month: YearMonth = YearMonth.now(),
     val selectedDate: LocalDate = LocalDate.now(),
-    val searchQuery: String = "",
-    val filter: AppointmentFilter = AppointmentFilter.ALL,
+
     val monthAppointments: List<Appointment> = emptyList(),
-    val loading: Boolean = true
+
+    val searchQuery: String = "",
+    val filter: AppointmentFilter = AppointmentFilter.ALL
 )
 
 class AppointmentViewModel(
-    private val repo: AppointmentRepo,
-    private val zoneId: ZoneId = ZoneId.systemDefault()
+    private val repo: AppointmentRepo
 ) : ViewModel() {
 
-    private val _ui = MutableStateFlow(AppointmentsUiState())
-    val ui: StateFlow<AppointmentsUiState> = _ui
+    private val _ui = MutableStateFlow(AppointmentUiState())
+    val ui: StateFlow<AppointmentUiState> = _ui
 
-    private var streamJob: Job? = null
+    private var started = false
 
     fun setUser(userId: String) {
+        if (userId.isBlank()) return
         _ui.value = _ui.value.copy(userId = userId)
-        streamMonth()
+        startObserveOnce()
+    }
+
+    private fun startObserveOnce() {
+        if (started) return
+        val uid = _ui.value.userId
+        if (uid.isBlank()) return
+
+        started = true
+        _ui.value = _ui.value.copy(loading = true, error = null)
+
+        repo.observeAppointments(
+            userId = uid,
+            onUpdate = { list ->
+                _ui.value = _ui.value.copy(
+                    loading = false,
+                    monthAppointments = list.sortedBy { it.startMillis },
+                    error = null
+                )
+            },
+            onError = { err ->
+                _ui.value = _ui.value.copy(loading = false, error = err)
+            }
+        )
     }
 
     fun prevMonth() {
         _ui.value = _ui.value.copy(month = _ui.value.month.minusMonths(1))
-        streamMonth()
     }
 
     fun nextMonth() {
         _ui.value = _ui.value.copy(month = _ui.value.month.plusMonths(1))
-        streamMonth()
     }
 
     fun setSelectedDate(date: LocalDate) {
@@ -57,72 +79,82 @@ class AppointmentViewModel(
         _ui.value = _ui.value.copy(searchQuery = q)
     }
 
-    fun setFilter(filter: AppointmentFilter) {
-        _ui.value = _ui.value.copy(filter = filter)
+    fun setFilter(f: AppointmentFilter) {
+        _ui.value = _ui.value.copy(filter = f)
     }
 
-    private fun streamMonth() {
-        val userId = _ui.value.userId
-        if (userId.isBlank()) return
+    // ✅ FIXED addAppointment (matches model perfectly)
+    fun addAppointment(title: String, note: String, startMillis: Long, endMillis: Long) {
+        val uid = _ui.value.userId
+        if (uid.isBlank()) {
+            _ui.value = _ui.value.copy(error = "User not set")
+            return
+        }
 
-        streamJob?.cancel()
-        _ui.value = _ui.value.copy(loading = true)
+        val safeTitle = title.trim()
+        if (safeTitle.isBlank()) {
+            _ui.value = _ui.value.copy(error = "Title is required")
+            return
+        }
 
-        val month = _ui.value.month
-        val start = month.atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-        val end = month.plusMonths(1).atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val safeEnd = if (endMillis <= startMillis) startMillis + 60 * 60 * 1000 else endMillis
 
-        streamJob = viewModelScope.launch {
-            repo.streamAppointmentsInRange(userId, start, end).collect { list ->
-                _ui.value = _ui.value.copy(monthAppointments = list, loading = false)
-            }
+        val ap = Appointment(
+            id = "",
+            userId = uid,
+            title = safeTitle,
+            note = note.trim(),
+            startMillis = startMillis,
+            endMillis = safeEnd,
+            status = "Pending",
+            createdAt = System.currentTimeMillis()
+        )
+
+        repo.addAppointment(uid, ap) { ok, msg ->
+            if (!ok) _ui.value = _ui.value.copy(error = msg ?: "Failed to add appointment")
         }
     }
 
-    fun daysWithAppointmentsInMonth(): Set<LocalDate> {
-        return _ui.value.monthAppointments.map {
-            Instant.ofEpochMilli(it.startMillis).atZone(zoneId).toLocalDate()
-        }.toSet()
-    }
-
     fun appointmentsForSelectedDay(): List<Appointment> {
-        val state = _ui.value
-        val dayStart = state.selectedDate.atStartOfDay(zoneId).toInstant().toEpochMilli()
-        val dayEnd = state.selectedDate.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-        val now = System.currentTimeMillis()
+        val s = _ui.value
+        val zone = ZoneId.systemDefault()
 
-        return state.monthAppointments
+        val dayStart = s.selectedDate.atStartOfDay(zone).toInstant().toEpochMilli()
+        val dayEnd = s.selectedDate.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+
+        val now = System.currentTimeMillis()
+        val q = s.searchQuery.trim().lowercase(Locale.getDefault())
+
+        return s.monthAppointments
+            .asSequence()
             .filter { it.startMillis in dayStart until dayEnd }
             .filter {
-                when (state.filter) {
+                when (s.filter) {
                     AppointmentFilter.ALL -> true
-                    AppointmentFilter.UPCOMING -> it.startMillis >= now
+                    AppointmentFilter.UPCOMING -> it.endMillis >= now
                     AppointmentFilter.PAST -> it.endMillis < now
                 }
             }
             .filter {
-                if (state.searchQuery.isBlank()) true
-                else {
-                    val q = state.searchQuery.trim().lowercase()
-                    it.title.lowercase().contains(q) || it.note.lowercase().contains(q)
-                }
+                if (q.isBlank()) true
+                else it.title.lowercase(Locale.getDefault()).contains(q) ||
+                        it.note.lowercase(Locale.getDefault()).contains(q)
             }
+            .sortedBy { it.startMillis }
+            .toList()
     }
 
-    fun addAppointment(title: String, note: String, startMillis: Long, endMillis: Long) {
-        val userId = _ui.value.userId
-        if (userId.isBlank()) return
+    fun daysWithAppointmentsInMonth(): Set<LocalDate> {
+        val s = _ui.value
+        val zone = ZoneId.systemDefault()
 
-        viewModelScope.launch {
-            repo.addAppointment(
-                userId,
-                Appointment(
-                    title = title.trim(),
-                    note = note.trim(),
-                    startMillis = startMillis,
-                    endMillis = endMillis
-                )
-            )
-        }
+        val startOfMonth = s.month.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val endOfMonth = s.month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
+
+        return s.monthAppointments
+            .asSequence()
+            .filter { it.startMillis in startOfMonth until endOfMonth }
+            .map { Instant.ofEpochMilli(it.startMillis).atZone(zone).toLocalDate() }
+            .toSet()
     }
 }

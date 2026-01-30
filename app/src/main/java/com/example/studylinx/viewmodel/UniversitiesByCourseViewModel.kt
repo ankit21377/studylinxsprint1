@@ -1,44 +1,44 @@
+// File: com/example/studylinx/viewmodel/UniversitiesByCourseViewModel.kt
 package com.example.studylinx.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.studylinx.core.CourseKey
 import com.example.studylinx.model.University
-import com.example.studylinx.repo.CourseIndexRepo
-import com.example.studylinx.repo.CourseIndexRepoImpl
-import com.example.studylinx.repo.UniversityReadRepo
-import com.example.studylinx.repo.UniversityReadRepoImpl
+import com.example.studylinx.repo.UniversitiesByCourseRepo
+import com.example.studylinx.repo.UniversitiesByCourseRepoImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class UniversitiesByCourseUiState(
-    val loading: Boolean = true,
-    val courseName: String = "",
-    val list: List<University> = emptyList(),
-    val error: String? = null
-)
-
 class UniversitiesByCourseViewModel(
-    private val indexRepo: CourseIndexRepo = CourseIndexRepoImpl(),
-    private val uniRepo: UniversityReadRepo = UniversityReadRepoImpl()
+    private val repo: UniversitiesByCourseRepo = UniversitiesByCourseRepoImpl()
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(UniversitiesByCourseUiState())
-    val state: StateFlow<UniversitiesByCourseUiState> = _state
+    data class State(
+        val loading: Boolean = false,
+        val error: String? = null,
+        val list: List<University> = emptyList()
+    )
+
+    private val _state = MutableStateFlow(State())
+    val state: StateFlow<State> = _state.asStateFlow()
 
     fun start(courseName: String) {
-        val key = CourseKey.keyOf(courseName)
-        _state.value = UniversitiesByCourseUiState(loading = true, courseName = courseName)
+        if (courseName.isBlank()) {
+            _state.value = State(loading = false, error = "Course name missing", list = emptyList())
+            return
+        }
+
+        _state.value = _state.value.copy(loading = true, error = null)
 
         viewModelScope.launch {
             runCatching {
-                indexRepo.observeUniversityIdsForCourse(key).collect { ids ->
-                    val universities = uniRepo.getUniversitiesByIds(ids)
-                    _state.value = _state.value.copy(loading = false, list = universities, error = null)
-                }
+                repo.getUniversitiesByCourse(courseName)
+            }.onSuccess { list ->
+                _state.value = State(loading = false, error = null, list = list)
             }.onFailure { e ->
-                _state.value = _state.value.copy(loading = false, error = e.message)
+                _state.value = State(loading = false, error = e.message ?: "Failed to load universities", list = emptyList())
             }
         }
     }

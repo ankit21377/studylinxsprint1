@@ -1,6 +1,5 @@
 package com.example.studylinx
 
-import androidx.compose.ui.platform.testTag
 import android.content.Intent
 import android.os.Bundle
 import android.util.Patterns
@@ -10,38 +9,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -56,7 +36,6 @@ import androidx.compose.ui.unit.sp
 import com.example.studylinx.repo.UserRepoImpl
 
 class LoginActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -72,13 +51,12 @@ fun LoginBody() {
     var isLoading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-    val repo = remember { UserRepoImpl() } // ✅ using your UserRepoImpl directly
+    val repo = remember { UserRepoImpl() }
 
     fun doLogin() {
         val e = email.trim()
         val p = password.trim()
 
-        // ✅ Basic validation
         if (e.isEmpty()) {
             Toast.makeText(context, "Email is required", Toast.LENGTH_SHORT).show()
             return
@@ -94,14 +72,11 @@ fun LoginBody() {
 
         isLoading = true
 
-        // ✅ Firebase login
         repo.login(e, p) { success, message ->
             isLoading = false
 
             if (success) {
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-
-                // ✅ Go to Dashboard
                 val intent = Intent(context, DashboardActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 context.startActivity(intent)
@@ -115,18 +90,21 @@ fun LoginBody() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues = padding)
+                .padding(padding)
                 .background(White)
         ) {
 
+            // ✅ back arrow now goes back if needed (optional)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.baseline_arrow_back_ios_24),
-                    contentDescription = null
-                )
+                IconButton(onClick = { (context as? ComponentActivity)?.finish() }) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_arrow_back_ios_24),
+                        contentDescription = "Back"
+                    )
+                }
             }
 
             Row(
@@ -134,10 +112,7 @@ fun LoginBody() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Image(
-                    painter = painterResource(R.drawable.logo1),
-                    contentDescription = null
-                )
+                Image(painter = painterResource(R.drawable.logo1), contentDescription = null)
             }
 
             Row(
@@ -176,7 +151,9 @@ fun LoginBody() {
                             onValueChange = { email = it },
                             shape = RoundedCornerShape(12.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            modifier = Modifier.fillMaxWidth().testTag("email"),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("email"),
                             placeholder = { Text("abc@gmail.com") },
                             singleLine = true,
                             enabled = !isLoading,
@@ -204,13 +181,14 @@ fun LoginBody() {
                                     Icon(
                                         painter = if (visibility)
                                             painterResource(R.drawable.baseline_visibility_24)
-                                        else
-                                            painterResource(R.drawable.baseline_visibility_off_24),
+                                        else painterResource(R.drawable.baseline_visibility_off_24),
                                         contentDescription = null
                                     )
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth().testTag("password"),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("password"),
                             placeholder = { Text("Password") },
                             singleLine = true,
                             enabled = !isLoading,
@@ -235,7 +213,8 @@ fun LoginBody() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(100.dp)
-                        .padding(horizontal = 40.dp, vertical = 20.dp).testTag("login"),
+                        .padding(horizontal = 40.dp, vertical = 20.dp)
+                        .testTag("login"),
                 ) {
                     Text(if (isLoading) "Signing in..." else "Sign in")
                 }
@@ -260,9 +239,7 @@ fun LoginBody() {
                     onClick = { offset ->
                         annotatedString.getStringAnnotations("SignUp", offset, offset)
                             .firstOrNull()?.let {
-                                context.startActivity(
-                                    Intent(context, RegisterActivity::class.java)
-                                )
+                                context.startActivity(Intent(context, RegisterActivity::class.java))
                             }
                     }
                 )

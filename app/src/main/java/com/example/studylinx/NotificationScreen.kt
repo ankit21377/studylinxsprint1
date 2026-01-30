@@ -1,3 +1,4 @@
+// File: com/example/studylinx/NotificationScreen.kt
 package com.example.studylinx
 
 import androidx.compose.foundation.background
@@ -87,7 +88,9 @@ fun NotificationScreen(
         Spacer(Modifier.height(16.dp))
 
         NotificationTabs(
-            modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth(),
             selected = tab,
             unreadCount = unreadCount,
             onSelect = { tab = it }
@@ -249,9 +252,15 @@ private fun TabPill(
         TextButton(
             onClick = onClick,
             modifier = Modifier.fillMaxSize(),
-            colors = ButtonDefaults.textButtonColors(contentColor = if (selected) selectedBlue else unselectedText)
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = if (selected) selectedBlue else unselectedText
+            )
         ) {
-            Text(text, fontSize = 18.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
+            Text(
+                text = text,
+                fontSize = 18.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+            )
         }
     }
 }
@@ -276,10 +285,16 @@ private fun TabUnread(
         TextButton(
             onClick = onClick,
             modifier = Modifier.fillMaxSize(),
-            colors = ButtonDefaults.textButtonColors(contentColor = if (selected) selectedBlue else unselectedText)
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = if (selected) selectedBlue else unselectedText
+            )
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Unread", fontSize = 18.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
+                Text(
+                    "Unread",
+                    fontSize = 18.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                )
                 Spacer(Modifier.width(10.dp))
                 Box(
                     modifier = Modifier
@@ -288,7 +303,12 @@ private fun TabUnread(
                         .background(selectedBlue),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(unreadCount.toString(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(
+                        unreadCount.toString(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
                 }
             }
         }
@@ -365,3 +385,4 @@ private fun NotificationCard(
         }
     }
 }
+

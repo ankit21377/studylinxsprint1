@@ -1,14 +1,20 @@
+// File: com/example/studylinx/repo/AppointmentRepo.kt
 package com.example.studylinx.repo
 
 import com.example.studylinx.model.Appointment
-import kotlinx.coroutines.flow.Flow
 
 interface AppointmentRepo {
-    fun streamAppointmentsInRange(
+    fun observeAppointments(
         userId: String,
-        startMillisInclusive: Long,
-        endMillisExclusive: Long
-    ): Flow<List<Appointment>>
+        onUpdate: (List<Appointment>) -> Unit,
+        onError: (String) -> Unit
+    )
 
-    suspend fun addAppointment(userId: String, appointment: Appointment): String
+    fun addAppointment(
+        userId: String,
+        appointment: Appointment,
+        onDone: (Boolean, String?) -> Unit
+    )
+
+    fun stop() // important to remove listener
 }

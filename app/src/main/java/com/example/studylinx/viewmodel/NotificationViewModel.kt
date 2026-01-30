@@ -1,3 +1,4 @@
+// File: com/example/studylinx/viewmodel/NotificationViewModel.kt
 package com.example.studylinx.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -27,8 +28,10 @@ class NotificationViewModel : ViewModel() {
     val error: StateFlow<String?> = _error.asStateFlow()
 
     private var observeJob: Job? = null
+    private var currentUserId: String = ""
 
     fun startForAllUsers() {
+        currentUserId = ""
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
             repo.observeGlobal()
@@ -39,6 +42,7 @@ class NotificationViewModel : ViewModel() {
     }
 
     fun startForUser(userId: String) {
+        currentUserId = userId
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
             repo.observeForUser(userId)
@@ -49,14 +53,17 @@ class NotificationViewModel : ViewModel() {
     }
 
     fun markAsRead(notificationId: String) {
-        viewModelScope.launch { runCatching { repo.markAsRead(notificationId) } }
+        val uid = currentUserId
+        if (uid.isBlank()) return
+        viewModelScope.launch { runCatching { repo.markAsRead(uid, notificationId) } }
     }
 
     fun delete(notificationId: String) {
-        viewModelScope.launch { runCatching { repo.delete(notificationId) } }
+        val uid = currentUserId
+        if (uid.isBlank()) return
+        viewModelScope.launch { runCatching { repo.delete(uid, notificationId) } }
     }
 
-    // ✅ admin create
     fun createNotification(
         targetUserId: String,
         userName: String,
@@ -65,12 +72,7 @@ class NotificationViewModel : ViewModel() {
     ) {
         viewModelScope.launch {
             runCatching {
-                repo.createNotification(
-                    targetUserId = targetUserId,
-                    userName = userName,
-                    title = title,
-                    message = message
-                )
+                repo.createNotification(targetUserId, userName, title, message)
             }.onFailure { _error.value = it.message ?: "Failed to send notification" }
         }
     }

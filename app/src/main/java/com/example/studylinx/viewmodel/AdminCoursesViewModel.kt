@@ -1,146 +1,95 @@
+// File: com/example/studylinx/viewmodel/AdminCoursesViewModel.kt
 package com.example.studylinx.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.studylinx.core.CourseKey
 import com.example.studylinx.model.Course
-import com.example.studylinx.model.University
-import com.example.studylinx.repo.CourseIndexRepo
-import com.example.studylinx.repo.CourseIndexRepoImpl
-import com.example.studylinx.repo.CourseRepo
-import com.example.studylinx.repo.CourseRepoImpl
+import com.example.studylinx.repo.AdminCourseSyncRepo
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-data class AdminCoursesUiState(
-    val loading: Boolean = true,
-    val courses: List<Course> = emptyList(),
+data class AdminCoursesState(
+    val loading: Boolean = false,
     val error: String? = null,
+    val courses: List<Course> = emptyList(),
     val toast: String? = null
 )
 
-class AdminCoursesViewModel(
-    private val repo: CourseRepo = CourseRepoImpl(),
-    private val indexRepo: CourseIndexRepo = CourseIndexRepoImpl(),
-) : ViewModel() {
+class AdminCoursesViewModel : ViewModel() {
 
-    private val root = FirebaseDatabase.getInstance().reference
-    private val universitiesRef = root.child("universities")
+    private val syncRepo = AdminCourseSyncRepo()
+    private val coursesRef = FirebaseDatabase.getInstance().reference.child("courses")
 
-    private val _state = MutableStateFlow(AdminCoursesUiState())
-    val state: StateFlow<AdminCoursesUiState> = _state
+    private val _state = MutableStateFlow(AdminCoursesState(loading = true))
+    val state: StateFlow<AdminCoursesState> = _state
 
     init {
-        viewModelScope.launch {
-            runCatching {
-                repo.observeCourses().collect { list ->
-                    _state.value = AdminCoursesUiState(
-                        loading = false,
-                        courses = list,
-                        error = null,
-                        toast = null
-                    )
-                }
-            }.onFailure { e ->
-                _state.value = AdminCoursesUiState(
-                    loading = false,
-                    courses = emptyList(),
-                    error = e.message ?: "Failed to load courses",
-                    toast = null
-                )
-            }
-        }
+        loadCourses()
     }
 
     fun clearToast() {
         _state.value = _state.value.copy(toast = null)
     }
 
+    fun loadCourses() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true, error = null)
+            runCatching {
+                val snap = coursesRef.get().await()
+                val list = snap.children.mapNotNull { c ->
+                    val id = c.child("id").getValue(String::class.java) ?: c.key ?: return@mapNotNull null
+                    val name = c.child("name").getValue(String::class.java) ?: return@mapNotNull null
+                    Course(id = id, name = name)
+                }.sortedBy { it.name.lowercase() }
+
+                _state.value = _state.value.copy(loading = false, courses = list)
+            }.onFailure {
+                _state.value = _state.value.copy(loading = false, error = it.message ?: "Failed to load")
+            }
+        }
+    }
+
     fun addCourse(name: String) {
         viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true, error = null)
             runCatching {
-                _state.value = _state.value.copy(loading = true)
-                repo.addCourse(name)
+                syncRepo.addCourse(name.trim())
             }.onSuccess {
-                _state.value = _state.value.copy(loading = false, toast = "Course added")
-            }.onFailure { e ->
-                _state.value = _state.value.copy(loading = false, toast = e.message ?: "Failed")
+                _state.value = _state.value.copy(toast = "Course added")
+                loadCourses()
+            }.onFailure {
+                _state.value = _state.value.copy(loading = false, error = it.message ?: "Failed to add")
             }
         }
     }
 
-    fun updateCourse(old: Course, newName: String) {
+    fun updateCourse(target: Course, newName: String) {
         viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true, error = null)
             runCatching {
-                _state.value = _state.value.copy(loading = true)
-
-                val oldKey = CourseKey.keyOf(old.name)
-                val newKey = CourseKey.keyOf(newName)
-
-                // 1) Update course name in courses node
-                repo.updateCourse(old.id, newName)
-
-                // 2) Move course_index (rename node):
-                // course_index/oldKey/{uniId}=true -> course_index/newKey/{uniId}=true
-                if (oldKey != newKey) {
-                    val idsSnap = root.child("course_index").child(oldKey).get().await()
-                    val ids = idsSnap.children.mapNotNull { it.key }
-
-                    // copy to new
-                    for (id in ids) indexRepo.addUniversityToCourse(newKey, id)
-                    // remove old
-                    indexRepo.deleteCourseIndex(oldKey)
-
-                    // 3) Update course name in every university.courses list
-                    val uniSnap = universitiesRef.get().await()
-                    for (u in uniSnap.children) {
-                        val uniId = u.key ?: continue
-                        val model = u.getValue(University::class.java) ?: continue
-                        val updatedCourses = model.courses.map {
-                            if (CourseKey.keyOf(it) == oldKey) newName else it
-                        }
-                        universitiesRef.child(uniId).child("courses").setValue(updatedCourses).await()
-                    }
-                }
-
+                syncRepo.renameCourse(target.id, target.name, newName.trim())
             }.onSuccess {
-                _state.value = _state.value.copy(loading = false, toast = "Course updated")
-            }.onFailure { e ->
-                _state.value = _state.value.copy(loading = false, toast = e.message ?: "Failed")
+                _state.value = _state.value.copy(toast = "Course updated")
+                loadCourses()
+            }.onFailure {
+                _state.value = _state.value.copy(loading = false, error = it.message ?: "Failed to update")
             }
         }
     }
 
-    fun deleteCourse(course: Course) {
+    fun deleteCourse(target: Course) {
         viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true, error = null)
             runCatching {
-                _state.value = _state.value.copy(loading = true)
-
-                val key = CourseKey.keyOf(course.name)
-
-                // 1) Delete course from courses node
-                repo.deleteCourse(course.id)
-
-                // 2) Delete course index node
-                indexRepo.deleteCourseIndex(key)
-
-                // 3) Remove course from every university
-                val uniSnap = universitiesRef.get().await()
-                for (u in uniSnap.children) {
-                    val uniId = u.key ?: continue
-                    val model = u.getValue(University::class.java) ?: continue
-                    if (model.courses.any { CourseKey.keyOf(it) == key }) {
-                        val updated = model.courses.filterNot { CourseKey.keyOf(it) == key }
-                        universitiesRef.child(uniId).child("courses").setValue(updated).await()
-                    }
-                }
+                syncRepo.deleteCourse(target.id, target.name)
             }.onSuccess {
-                _state.value = _state.value.copy(loading = false, toast = "Course deleted")
-            }.onFailure { e ->
-                _state.value = _state.value.copy(loading = false, toast = e.message ?: "Failed")
+                _state.value = _state.value.copy(toast = "Course deleted")
+                loadCourses()
+            }.onFailure {
+                _state.value = _state.value.copy(loading = false, error = it.message ?: "Failed to delete")
             }
         }
     }
