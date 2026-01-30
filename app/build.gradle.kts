@@ -77,6 +77,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-database-ktx")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // ✅ Coroutines Google Tasks
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
