@@ -2,8 +2,10 @@ package com.example.studylinx
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -11,7 +13,6 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -29,21 +30,17 @@ private enum class NotificationTab { ALL, UNREAD, READ }
 
 @Composable
 fun NotificationScreen(
-    vm: NotificationViewModel = viewModel(),
-
-    loadForCurrentUser: Boolean = false
+    vm: NotificationViewModel = viewModel()
 ) {
-
     val allNotifications by vm.notifications.collectAsState()
     val loading by vm.loading.collectAsState()
     val error by vm.error.collectAsState()
+    val popup by vm.selectedDetail.collectAsState()
 
-
-    LaunchedEffect(loadForCurrentUser) {
-
-        vm.startObservingGlobal()
+    // ✅ start observing current user + global
+    LaunchedEffect(Unit) {
+        vm.startObservingForCurrentUser()
     }
-
 
     var tab by remember { mutableStateOf(NotificationTab.ALL) }
 
@@ -60,6 +57,29 @@ fun NotificationScreen(
     val primaryBlue = Color(0xFF4E86D9)
     val primaryBlue2 = Color(0xFF6EA4EA)
 
+    // ✅ Popup dialog when user clicks
+    if (popup != null) {
+        AlertDialog(
+            onDismissRequest = { vm.closePopup() },
+            confirmButton = {
+                TextButton(onClick = { vm.closePopup() }) { Text("Close") }
+            },
+            title = {
+                Text(
+                    text = popup!!.title,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(popup!!.details, fontSize = 14.sp)
+                    Spacer(Modifier.height(10.dp))
+                    Text(popup!!.timeAgo, color = Color(0xFF6A7786), fontSize = 12.sp)
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -70,11 +90,7 @@ fun NotificationScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(92.dp)
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(primaryBlue, primaryBlue2)
-                    )
-                )
+                .background(Brush.horizontalGradient(listOf(primaryBlue, primaryBlue2)))
                 .padding(horizontal = 20.dp),
             contentAlignment = Alignment.CenterStart
         ) {
@@ -88,7 +104,6 @@ fun NotificationScreen(
 
         Spacer(Modifier.height(16.dp))
 
-
         NotificationTabs(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
@@ -100,18 +115,13 @@ fun NotificationScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // --- Content states ---
         when {
-            loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+            loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
 
-            error != null -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = error ?: "Error", color = Color.Red)
-                }
+            error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = error ?: "Error", color = Color.Red)
             }
 
             else -> {
@@ -120,13 +130,13 @@ fun NotificationScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    items(shown) { item ->
+                    items(items = shown, key = { it.id }) { item ->
                         NotificationCard(
                             item = item,
-                            primaryBlue = primaryBlue
+                            primaryBlue = primaryBlue,
+                            onClick = { vm.onNotificationClick(item) } // ✅ marks read + opens popup
                         )
                     }
-
                     item { Spacer(Modifier.height(10.dp)) }
                 }
             }
@@ -154,27 +164,9 @@ private fun NotificationTabs(
             .padding(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        TabPill(
-            text = "All",
-            selected = selected == NotificationTab.ALL,
-            onClick = { onSelect(NotificationTab.ALL) },
-            pillColor = pill,
-            selectedBlue = selectedBlue,
-            unselectedText = unselectedText,
-            modifier = Modifier.weight(1f)
-        )
+        TabPill("All", selected == NotificationTab.ALL, { onSelect(NotificationTab.ALL) }, pill, selectedBlue, unselectedText, Modifier.weight(1f))
+        TabUnread(selected == NotificationTab.UNREAD, unreadCount, { onSelect(NotificationTab.UNREAD) }, pill, selectedBlue, unselectedText, Modifier.weight(1f))
 
-        TabUnread(
-            selected = selected == NotificationTab.UNREAD,
-            unreadCount = unreadCount,
-            onClick = { onSelect(NotificationTab.UNREAD) },
-            pillColor = pill,
-            selectedBlue = selectedBlue,
-            unselectedText = unselectedText,
-            modifier = Modifier.weight(1f)
-        )
-
-        // small divider like image
         Box(
             modifier = Modifier
                 .width(1.dp)
@@ -182,15 +174,7 @@ private fun NotificationTabs(
                 .background(Color(0xFFCAD9F4))
         )
 
-        TabPill(
-            text = "Read",
-            selected = selected == NotificationTab.READ,
-            onClick = { onSelect(NotificationTab.READ) },
-            pillColor = pill,
-            selectedBlue = selectedBlue,
-            unselectedText = unselectedText,
-            modifier = Modifier.weight(1f)
-        )
+        TabPill("Read", selected == NotificationTab.READ, { onSelect(NotificationTab.READ) }, pill, selectedBlue, unselectedText, Modifier.weight(1f))
     }
 }
 
@@ -204,8 +188,6 @@ private fun TabPill(
     unselectedText: Color,
     modifier: Modifier = Modifier
 ) {
-    val underlineColor = selectedBlue
-
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -219,18 +201,14 @@ private fun TabPill(
             colors = ButtonDefaults.textButtonColors(contentColor = if (selected) selectedBlue else unselectedText)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = text,
-                    fontSize = 18.sp,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                )
+                Text(text, fontSize = 18.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
                 Spacer(Modifier.height(6.dp))
                 Box(
                     modifier = Modifier
                         .height(4.dp)
                         .width(42.dp)
                         .clip(RoundedCornerShape(99.dp))
-                        .background(if (selected) underlineColor else Color.Transparent)
+                        .background(if (selected) selectedBlue else Color.Transparent)
                 )
             }
         }
@@ -260,13 +238,8 @@ private fun TabUnread(
             colors = ButtonDefaults.textButtonColors(contentColor = if (selected) selectedBlue else unselectedText)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Unread",
-                    fontSize = 18.sp,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                )
+                Text("Unread", fontSize = 18.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
                 Spacer(Modifier.width(10.dp))
-                // Badge like image (blue circle with number)
                 Box(
                     modifier = Modifier
                         .size(28.dp)
@@ -274,12 +247,7 @@ private fun TabUnread(
                         .background(selectedBlue),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = unreadCount.coerceAtLeast(0).toString(),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
+                    Text(unreadCount.coerceAtLeast(0).toString(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -289,13 +257,14 @@ private fun TabUnread(
 @Composable
 private fun NotificationCard(
     item: NotificationItem,
-    primaryBlue: Color
+    primaryBlue: Color,
+    onClick: () -> Unit
 ) {
-    // Card like image: big rounded, light shadow, bell icon left, text, optional blue dot at right for unread
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(18.dp)),
+            .shadow(6.dp, RoundedCornerShape(18.dp))
+            .clickable { onClick() }, // ✅ click = open dialog + mark read
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -305,7 +274,6 @@ private fun NotificationCard(
                 .padding(horizontal = 18.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bell icon in soft blue circle-ish feel
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -313,33 +281,23 @@ private fun NotificationCard(
                     .background(Color(0xFFE9F1FF)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Notifications,
-                    contentDescription = null,
-                    tint = primaryBlue,
-                    modifier = Modifier.size(26.dp)
-                )
+                Icon(Icons.Filled.Notifications, contentDescription = null, tint = primaryBlue, modifier = Modifier.size(26.dp))
             }
 
             Spacer(Modifier.width(14.dp))
 
-            Text(
-                text = buildString {
-                    // If your DB stores only "action" as full sentence, this still works
-                    val msg = if (item.userName.isNotBlank() && item.action.isNotBlank())
-                        "${item.userName} ${item.action}"
-                    else item.action.ifBlank { "Notification" }
-                    append(msg)
-                    // In your screenshot, only one line message. Keep it clean.
-                },
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF1B2430),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = if (item.userName.isNotBlank()) "${item.userName}: ${item.action}" else item.action,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF1B2430),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(item.timeAgo, fontSize = 12.sp, color = Color(0xFF6A7786))
+            }
 
             if (!item.isRead) {
                 Spacer(Modifier.width(12.dp))
