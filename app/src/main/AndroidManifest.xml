@@ -14,11 +14,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyLinX">
         <activity
-<<<<<<< HEAD
-            android:name=".AdminCountriesActivity"
-            android:exported="true"
-            android:label="@string/title_activity_admin_countries"
-=======
             android:name=".AdminNotificationsActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_notifications"
@@ -33,7 +28,6 @@
             android:name=".UniversityDetailsActivity"
             android:exported="true"
             android:label="@string/title_activity_university_details"
->>>>>>> d9f98490fb90a52e6ad94f5c387d9ea07c8d9c3b
             android:theme="@style/Theme.StudyLinX">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
