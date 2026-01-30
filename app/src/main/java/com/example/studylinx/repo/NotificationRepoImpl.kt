@@ -14,54 +14,50 @@ class NotificationRepoImpl(
 
     private val collection = db.collection("notifications")
 
-    override fun observeGlobalNotifications(): Flow<List<NotificationItem>> = callbackFlow {
+    override fun observeGlobal(): Flow<List<NotificationItem>> = callbackFlow {
         val listener = collection
+            .whereEqualTo("userId", "ALL")
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snap, e ->
-                if (e != null) {
-                    close(e)
-                    return@addSnapshotListener
-                }
-
-                val items = snap?.documents?.map { doc ->
+                if (e != null) { close(e); return@addSnapshotListener }
+                val list = snap?.documents?.map { doc ->
                     NotificationItem(
                         id = doc.id,
                         userId = doc.getString("userId") ?: "",
                         userName = doc.getString("userName") ?: "",
-                        action = doc.getString("action") ?: "",
+                        title = doc.getString("title") ?: "",
+                        message = doc.getString("message") ?: "",
+                        likeCount = (doc.getLong("likeCount") ?: 0L).toInt(),
                         isRead = doc.getBoolean("isRead") ?: false,
                         createdAt = doc.getLong("createdAt") ?: 0L
                     )
                 } ?: emptyList()
-
-                trySend(items).isSuccess
+                trySend(list).isSuccess
             }
 
         awaitClose { listener.remove() }
     }
 
-    override fun observeNotificationsForUser(userId: String): Flow<List<NotificationItem>> = callbackFlow {
+    override fun observeForUser(userId: String): Flow<List<NotificationItem>> = callbackFlow {
+        // ✅ show both ALL + user-specific
         val listener = collection
-            .whereEqualTo("userId", userId)
+            .whereIn("userId", listOf("ALL", userId))
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snap, e ->
-                if (e != null) {
-                    close(e)
-                    return@addSnapshotListener
-                }
-
-                val items = snap?.documents?.map { doc ->
+                if (e != null) { close(e); return@addSnapshotListener }
+                val list = snap?.documents?.map { doc ->
                     NotificationItem(
                         id = doc.id,
                         userId = doc.getString("userId") ?: "",
                         userName = doc.getString("userName") ?: "",
-                        action = doc.getString("action") ?: "",
+                        title = doc.getString("title") ?: "",
+                        message = doc.getString("message") ?: "",
+                        likeCount = (doc.getLong("likeCount") ?: 0L).toInt(),
                         isRead = doc.getBoolean("isRead") ?: false,
                         createdAt = doc.getLong("createdAt") ?: 0L
                     )
                 } ?: emptyList()
-
-                trySend(items).isSuccess
+                trySend(list).isSuccess
             }
 
         awaitClose { listener.remove() }
@@ -71,19 +67,26 @@ class NotificationRepoImpl(
         collection.document(notificationId).update("isRead", true).await()
     }
 
-    override suspend fun markAllAsReadForUser(userId: String) {
-        val snap = collection
-            .whereEqualTo("userId", userId)
-            .whereEqualTo("isRead", false)
-            .get()
-            .await()
-
-        val batch = db.batch()
-        for (doc in snap.documents) batch.update(doc.reference, "isRead", true)
-        batch.commit().await()
+    override suspend fun delete(notificationId: String) {
+        collection.document(notificationId).delete().await()
     }
 
-    override suspend fun deleteNotification(notificationId: String) {
-        collection.document(notificationId).delete().await()
+    override suspend fun createNotification(
+        targetUserId: String,
+        userName: String,
+        title: String,
+        message: String,
+        likeCount: Int
+    ) {
+        val data = hashMapOf(
+            "userId" to targetUserId.ifBlank { "ALL" },
+            "userName" to userName,
+            "title" to title,
+            "message" to message,
+            "likeCount" to likeCount,
+            "isRead" to false,
+            "createdAt" to System.currentTimeMillis()
+        )
+        collection.add(data).await()
     }
 }
