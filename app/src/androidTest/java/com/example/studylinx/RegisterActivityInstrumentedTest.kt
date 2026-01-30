@@ -67,6 +67,12 @@ class RegisterActivityInstrumentedTest {
     fun debug_printRegisterSemanticsTree() {
         rule.onRoot(useUnmergedTree = true).printToLog("REG_TREE")
     }
+    @Test
+    fun backArrow_navigatesToLogin() {
+        rule.onNodeWithTag("reg_back", useUnmergedTree = true).performClick()
+        Intents.intended(hasComponent(LoginActivity::class.java.name))
+    }
+
 
 
 
