@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,9 +59,7 @@ private fun UniversityDetailsScreen(
 ) {
     val ui by vm.ui.collectAsState()
 
-    LaunchedEffect(uniId) {
-        vm.loadUniversity(uniId)
-    }
+    LaunchedEffect(uniId) { vm.loadUniversity(uniId) }
 
     val bg = Brush.verticalGradient(listOf(Color(0xFFF6FAFF), Color(0xFFEAF2FF)))
     val primaryBlue = Color(0xFF2F79E6)
@@ -87,25 +86,18 @@ private fun UniversityDetailsScreen(
                 .padding(16.dp)
         ) {
             when {
-                ui.loading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = primaryBlue)
-                    }
+                ui.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = primaryBlue)
                 }
 
-                ui.error != null -> {
-                    Text(ui.error ?: "Error", color = Color.Red)
-                }
+                ui.error != null -> Text(ui.error ?: "Error", color = Color.Red)
 
-                ui.university == null -> {
-                    Text("University not found", color = textMuted)
-                }
+                ui.university == null -> Text("University not found", color = textMuted)
 
                 else -> {
                     val uni = ui.university!!
 
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-
                         Card(
                             shape = RoundedCornerShape(22.dp),
                             colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -163,7 +155,7 @@ private fun UniversityDetailsScreen(
                             onClick = {
                                 vm.enroll(
                                     uniId = uni.id,
-                                    onDone = { ok, msg -> toast(msg) }
+                                    onDone = { _, msg -> toast(msg) }
                                 )
                             },
                             modifier = Modifier

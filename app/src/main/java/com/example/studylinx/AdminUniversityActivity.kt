@@ -11,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,9 +20,11 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -70,12 +71,15 @@ private fun AdminUniversitiesScreen(
     // Delete confirm
     var deleteTarget by remember { mutableStateOf<University?>(null) }
 
+    // Toast from VM
     LaunchedEffect(state.toast) {
         state.toast?.let {
             Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show()
             vm.clearToast()
         }
     }
+
+    val bg = Brush.verticalGradient(listOf(Color(0xFFF6FAFF), Color(0xFFEAF2FF)))
 
     Scaffold(
         topBar = {
@@ -99,7 +103,7 @@ private fun AdminUniversitiesScreen(
             Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(Color(0xFFF6FAFF))
+                .background(bg)
                 .padding(16.dp)
         ) {
             Column(Modifier.fillMaxSize()) {
@@ -111,7 +115,11 @@ private fun AdminUniversitiesScreen(
                     placeholder = { Text("Search universities...") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = Color.White
+                    )
                 )
 
                 Spacer(Modifier.height(12.dp))
@@ -123,7 +131,13 @@ private fun AdminUniversitiesScreen(
                         }
                     }
 
-                    state.error != null -> Text(state.error ?: "Error", color = Color.Red)
+                    state.error != null -> {
+                        Text(
+                            text = state.error ?: "Error",
+                            color = Color.Red,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
 
                     else -> {
                         LazyColumn(
@@ -142,6 +156,7 @@ private fun AdminUniversitiesScreen(
                 }
             }
 
+            // ---------- Add dialog ----------
             if (showAdd) {
                 AdminUniversityDialog(
                     title = "Add University",
@@ -154,6 +169,7 @@ private fun AdminUniversitiesScreen(
                 )
             }
 
+            // ---------- Edit dialog ----------
             if (editTarget != null) {
                 val u = editTarget!!
                 AdminUniversityDialog(
@@ -167,12 +183,13 @@ private fun AdminUniversitiesScreen(
                 )
             }
 
+            // ---------- Delete confirm ----------
             if (deleteTarget != null) {
                 val u = deleteTarget!!
                 AlertDialog(
                     onDismissRequest = { deleteTarget = null },
                     title = { Text("Delete University?") },
-                    text = { Text("This will remove university and course indexes.\n\n${u.name}") },
+                    text = { Text("This will remove the university.\n\n${u.name}") },
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -196,7 +213,11 @@ private fun AdminUniCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -216,8 +237,19 @@ private fun AdminUniCard(
             Spacer(Modifier.width(12.dp))
 
             Column(Modifier.weight(1f)) {
-                Text(uni.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("${uni.city}, ${uni.country}", style = MaterialTheme.typography.labelMedium, color = Color(0xFF6A7786))
+                Text(
+                    uni.name,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    "${uni.city}, ${uni.country}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color(0xFF6A7786),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 if (uni.courses.isNotEmpty()) {
                     Text(
                         "Courses: ${uni.courses.take(3).joinToString()}",
@@ -250,16 +282,16 @@ private fun AdminUniversityDialog(
     var name by remember { mutableStateOf(initial.name) }
     var city by remember { mutableStateOf(initial.city) }
     var country by remember { mutableStateOf(initial.country) }
+    var countryId by remember { mutableStateOf(initial.countryId) }
     var description by remember { mutableStateOf(initial.description) }
     var locationUrl by remember { mutableStateOf(initial.locationUrl) }
 
-    // Courses chip editing
+    // courses
     var courses by remember { mutableStateOf(initial.courses.toMutableList()) }
     var courseInput by remember { mutableStateOf("") }
 
-    // Image picker
+    // image picker
     var pickedImage by remember { mutableStateOf<Uri?>(null) }
-
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) pickedImage = uri
     }
@@ -270,7 +302,7 @@ private fun AdminUniversityDialog(
         text = {
             Column(Modifier.fillMaxWidth()) {
 
-                // Image preview
+                // Image picker row
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     AsyncImage(
                         model = pickedImage ?: initial.imageUrl,
@@ -296,6 +328,8 @@ private fun AdminUniversityDialog(
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(value = country, onValueChange = { country = it }, label = { Text("Country") }, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = countryId, onValueChange = { countryId = it }, label = { Text("Country ID (e.g. usa)") }, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
                 OutlinedTextField(value = locationUrl, onValueChange = { locationUrl = it }, label = { Text("Location URL") }, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
 
@@ -309,11 +343,9 @@ private fun AdminUniversityDialog(
                 )
 
                 Spacer(Modifier.height(12.dp))
-
                 Text("Courses", fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(8.dp))
 
-                // Chips
                 FlowRowCourses(
                     courses = courses,
                     onRemove = { item -> courses = courses.toMutableList().apply { remove(item) } }
@@ -348,6 +380,7 @@ private fun AdminUniversityDialog(
                     name = name.trim(),
                     city = city.trim(),
                     country = country.trim(),
+                    countryId = countryId.trim(),
                     description = description.trim(),
                     locationUrl = locationUrl.trim(),
                     courses = courses.map { it.trim() }.filter { it.isNotBlank() }.distinct()
@@ -364,20 +397,18 @@ private fun FlowRowCourses(
     courses: List<String>,
     onRemove: (String) -> Unit
 ) {
-    // No external dependency; simple wrapping layout
+    if (courses.isEmpty()) {
+        Text("No courses added", color = Color(0xFF6A7786))
+        return
+    }
+
+    val chunked = courses.chunked(3)
     Column {
-        var row by remember { mutableStateOf(listOf<String>()) }
-        row = courses
-
-        if (row.isEmpty()) {
-            Text("No courses added", color = Color(0xFF6A7786))
-            return
-        }
-
-        // Simple wrap-like effect using Rows in Column
-        val chunked = row.chunked(3)
         chunked.forEach { chunk ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 chunk.forEach { c ->
                     AssistChip(
                         onClick = { onRemove(c) },
@@ -388,10 +419,7 @@ private fun FlowRowCourses(
                             .border(1.dp, Color(0xFFE1ECFF), RoundedCornerShape(999.dp))
                     )
                 }
-                // fill remaining
-                repeat(3 - chunk.size) {
-                    Spacer(Modifier.weight(1f))
-                }
+                repeat(3 - chunk.size) { Spacer(Modifier.weight(1f)) }
             }
             Spacer(Modifier.height(8.dp))
         }
