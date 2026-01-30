@@ -1,3 +1,4 @@
+// File: com/example/studylinx/AppointmentActivity.kt
 package com.example.studylinx
 
 import android.os.Bundle
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -29,8 +31,12 @@ import com.example.studylinx.viewmodel.AppointmentFilter
 import com.example.studylinx.viewmodel.AppointmentViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
-import java.time.*
+import java.text.SimpleDateFormat
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 import java.util.Locale
 
 class AppointmentActivity : ComponentActivity() {
@@ -39,14 +45,13 @@ class AppointmentActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            Surface(color = MaterialTheme.colorScheme.background) {
+            MaterialTheme {
 
                 val vm: AppointmentViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            val repo = AppointmentRepoImpl()
                             @Suppress("UNCHECKED_CAST")
-                            return AppointmentViewModel(repo) as T
+                            return AppointmentViewModel(AppointmentRepoImpl()) as T
                         }
                     }
                 )
@@ -57,22 +62,14 @@ class AppointmentActivity : ComponentActivity() {
                     vm.setUser(user?.uid ?: "")
                 }
 
-                UserAppointmentsUI(
-                    vm = vm,
-                    onBack = { finish() }
-                )
+                UserAppointmentsUI(vm = vm, onBack = { finish() })
             }
         }
     }
 
-    /* ===================== USER UI ===================== */
-
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun UserAppointmentsUI(
-        vm: AppointmentViewModel,
-        onBack: () -> Unit
-    ) {
+    private fun UserAppointmentsUI(vm: AppointmentViewModel, onBack: () -> Unit) {
         val state by vm.ui.collectAsState()
 
         val dayList = remember(state.monthAppointments, state.selectedDate, state.searchQuery, state.filter) {
@@ -88,7 +85,7 @@ class AppointmentActivity : ComponentActivity() {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Appointments") },
+                    title = { Text("Appointments", fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -106,7 +103,9 @@ class AppointmentActivity : ComponentActivity() {
                 modifier = Modifier
                     .padding(pad)
                     .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
             ) {
+
                 CalendarCard(
                     month = state.month,
                     selectedDate = state.selectedDate,
@@ -118,17 +117,11 @@ class AppointmentActivity : ComponentActivity() {
 
                 Spacer(Modifier.height(10.dp))
 
-                SearchBar(
-                    query = state.searchQuery,
-                    onQueryChange = vm::setSearchQuery
-                )
+                SearchBar(query = state.searchQuery, onQueryChange = vm::setSearchQuery)
 
                 Spacer(Modifier.height(10.dp))
 
-                FilterRow(
-                    filter = state.filter,
-                    onChange = vm::setFilter
-                )
+                FilterRow(filter = state.filter, onChange = vm::setFilter)
 
                 Spacer(Modifier.height(10.dp))
 
@@ -144,6 +137,14 @@ class AppointmentActivity : ComponentActivity() {
                     fontWeight = FontWeight.SemiBold
                 )
 
+                state.error?.let {
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
+
                 if (state.loading) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -153,21 +154,15 @@ class AppointmentActivity : ComponentActivity() {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 12.dp),
-                        contentPadding = PaddingValues(bottom = 14.dp)
+                        contentPadding = PaddingValues(bottom = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         if (dayList.isNotEmpty()) {
                             items(dayList, key = { it.id }) { ap ->
-                                UserAppointmentCard(
-                                    appointment = ap,
-                                    onOpen = { openDetails = ap }
-                                )
-                                Spacer(Modifier.height(10.dp))
+                                UserAppointmentCard(appointment = ap, onOpen = { openDetails = ap })
                             }
                         } else {
-                            item {
-                                EmptyDayCard()
-                                Spacer(Modifier.height(12.dp))
-                            }
+                            item { EmptyDayCard() }
                         }
 
                         item {
@@ -206,6 +201,8 @@ class AppointmentActivity : ComponentActivity() {
             )
         }
     }
+
+    /* ===================== Calendar ===================== */
 
     @Composable
     private fun CalendarCard(
@@ -314,16 +311,12 @@ class AppointmentActivity : ComponentActivity() {
                                     modifier = Modifier
                                         .clip(CircleShape)
                                         .clickable { onSelectDate(date) }
+                                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                                         .padding(horizontal = 10.dp, vertical = 6.dp)
-                                        .background(
-                                            if (isSelected) MaterialTheme.colorScheme.primary
-                                            else MaterialTheme.colorScheme.surface
-                                        )
                                 ) {
                                     Text(
                                         text = dayNum.toString(),
-                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                        else MaterialTheme.colorScheme.onSurface,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                     )
                                     Spacer(Modifier.height(2.dp))
@@ -335,7 +328,7 @@ class AppointmentActivity : ComponentActivity() {
                                                 if (hasDot) {
                                                     if (isSelected) MaterialTheme.colorScheme.onPrimary
                                                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
-                                                } else MaterialTheme.colorScheme.surface
+                                                } else Color.Transparent
                                             )
                                     )
                                 }
@@ -347,6 +340,8 @@ class AppointmentActivity : ComponentActivity() {
             }
         }
     }
+
+    /* ===================== Search + Filter ===================== */
 
     @Composable
     private fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
@@ -370,10 +365,7 @@ class AppointmentActivity : ComponentActivity() {
             FilterChip(
                 selected = filter == AppointmentFilter.ALL,
                 onClick = { onChange(AppointmentFilter.ALL) },
-                label = { Text("All") },
-                leadingIcon = if (filter == AppointmentFilter.ALL) {
-                    { Icon(Icons.Default.Check, contentDescription = null) }
-                } else null
+                label = { Text("All") }
             )
             Spacer(Modifier.width(10.dp))
             FilterChip(
@@ -390,103 +382,7 @@ class AppointmentActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun UserAppointmentCard(appointment: Appointment, onOpen: () -> Unit) {
-        val zone = ZoneId.systemDefault()
-        val timeText = remember(appointment.startMillis, appointment.endMillis) {
-            val fmt = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
-            val s = Instant.ofEpochMilli(appointment.startMillis).atZone(zone).toLocalTime()
-            val e = Instant.ofEpochMilli(appointment.endMillis).atZone(zone).toLocalTime()
-            "${s.format(fmt)} — ${e.format(fmt)}"
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth().clickable { onOpen() },
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(14.dp).fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = appointment.title,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (appointment.note.isNotBlank()) {
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = appointment.note,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = timeText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-
-    @Composable
-    private fun EmptyDayCard() {
-        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.padding(16.dp)) {
-                Text(
-                    text = "No appointments for this day.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-
-    @Composable
-    private fun AppointmentDetailsDialog(appointment: Appointment, onDismiss: () -> Unit) {
-        val zone = ZoneId.systemDefault()
-        val date = remember(appointment.startMillis) {
-            Instant.ofEpochMilli(appointment.startMillis).atZone(zone).toLocalDate()
-        }
-        val start = remember(appointment.startMillis) {
-            Instant.ofEpochMilli(appointment.startMillis).atZone(zone).toLocalTime()
-        }
-        val end = remember(appointment.endMillis) {
-            Instant.ofEpochMilli(appointment.endMillis).atZone(zone).toLocalTime()
-        }
-
-        val dateFmt = remember { DateTimeFormatter.ofPattern("EEE, MMM d", Locale.getDefault()) }
-        val timeFmt = remember { DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault()) }
-
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text(appointment.title) },
-            text = {
-                Column {
-                    Text(
-                        text = "${date.format(dateFmt)} • ${start.format(timeFmt)} — ${end.format(timeFmt)}",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (appointment.note.isNotBlank()) {
-                        Spacer(Modifier.height(10.dp))
-                        Text(appointment.note)
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
-        )
-    }
+    /* ===================== Add Dialog (START/END) ===================== */
 
     @Composable
     private fun AddAppointmentDialog(
@@ -494,14 +390,21 @@ class AppointmentActivity : ComponentActivity() {
         onDismiss: () -> Unit,
         onSave: (title: String, note: String, startMillis: Long, endMillis: Long) -> Unit
     ) {
-        val zone = ZoneId.systemDefault()
         var title by remember { mutableStateOf("") }
         var note by remember { mutableStateOf("") }
 
-        var startTime by remember { mutableStateOf(LocalTime.of(10, 0)) }
-        var endTime by remember { mutableStateOf(LocalTime.of(11, 0)) }
+        var startMin by remember { mutableStateOf(10 * 60) } // 10:00
+        var endMin by remember { mutableStateOf(11 * 60) }   // 11:00
 
-        val timeFmt = remember { DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault()) }
+        fun clamp(mins: Int): Int = mins.coerceIn(0, 23 * 60 + 59)
+
+        fun formatMin(m: Int): String {
+            val hh = (m / 60) % 24
+            val mm = m % 60
+            val ampm = if (hh < 12) "AM" else "PM"
+            val h12 = when (val x = hh % 12) { 0 -> 12; else -> x }
+            return "%d:%02d %s".format(h12, mm, ampm)
+        }
 
         AlertDialog(
             onDismissRequest = onDismiss,
@@ -515,7 +418,9 @@ class AppointmentActivity : ComponentActivity() {
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+
                     Spacer(Modifier.height(10.dp))
+
                     OutlinedTextField(
                         value = note,
                         onValueChange = { note = it },
@@ -530,13 +435,17 @@ class AppointmentActivity : ComponentActivity() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TimeAdjust("Start", startTime.format(timeFmt),
-                            onMinus = { startTime = startTime.minusMinutes(15) },
-                            onPlus = { startTime = startTime.plusMinutes(15) }
+                        TimeAdjust(
+                            label = "Start",
+                            time = formatMin(startMin),
+                            onMinus = { startMin = clamp(startMin - 15) },
+                            onPlus = { startMin = clamp(startMin + 15) }
                         )
-                        TimeAdjust("End", endTime.format(timeFmt),
-                            onMinus = { endTime = endTime.minusMinutes(15) },
-                            onPlus = { endTime = endTime.plusMinutes(15) }
+                        TimeAdjust(
+                            label = "End",
+                            time = formatMin(endMin),
+                            onMinus = { endMin = clamp(endMin - 15) },
+                            onPlus = { endMin = clamp(endMin + 15) }
                         )
                     }
                 }
@@ -547,14 +456,26 @@ class AppointmentActivity : ComponentActivity() {
                         val safeTitle = title.trim()
                         if (safeTitle.isBlank()) return@TextButton
 
-                        var s = startTime
-                        var e = endTime
-                        if (!e.isAfter(s)) e = s.plusMinutes(60)
+                        var s = startMin
+                        var e = endMin
+                        if (e <= s) e = (s + 60).coerceAtMost(23 * 60 + 59)
 
-                        val startMillis = selectedDate.atTime(s).atZone(zone).toInstant().toEpochMilli()
-                        val endMillis = selectedDate.atTime(e).atZone(zone).toInstant().toEpochMilli()
+                        val cal = Calendar.getInstance()
+                        cal.set(Calendar.SECOND, 0)
+                        cal.set(Calendar.MILLISECOND, 0)
+                        cal.set(Calendar.YEAR, selectedDate.year)
+                        cal.set(Calendar.MONTH, selectedDate.monthValue - 1)
+                        cal.set(Calendar.DAY_OF_MONTH, selectedDate.dayOfMonth)
 
-                        onSave(safeTitle, note, startMillis, endMillis)
+                        cal.set(Calendar.HOUR_OF_DAY, s / 60)
+                        cal.set(Calendar.MINUTE, s % 60)
+                        val startMillis = cal.timeInMillis
+
+                        cal.set(Calendar.HOUR_OF_DAY, e / 60)
+                        cal.set(Calendar.MINUTE, e % 60)
+                        val endMillis = cal.timeInMillis
+
+                        onSave(safeTitle, note.trim(), startMillis, endMillis)
                     }
                 ) { Text("Save") }
             },
@@ -573,5 +494,87 @@ class AppointmentActivity : ComponentActivity() {
                 IconButton(onClick = onPlus) { Icon(Icons.Default.Add, contentDescription = null) }
             }
         }
+    }
+
+    /* ===================== Cards + Details ===================== */
+
+    @Composable
+    private fun UserAppointmentCard(appointment: Appointment, onOpen: () -> Unit) {
+        val fmt = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
+        val startText = remember(appointment.startMillis) { fmt.format(appointment.startMillis) }
+        val endText = remember(appointment.endMillis) { fmt.format(appointment.endMillis) }
+
+        Card(
+            modifier = Modifier.fillMaxWidth().clickable { onOpen() },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Row(
+                modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = appointment.title.ifBlank { "Appointment" },
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (appointment.note.isNotBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = appointment.note,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "$startText — $endText  •  ${appointment.status}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+
+    @Composable
+    private fun EmptyDayCard() {
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+            Column(Modifier.padding(16.dp)) {
+                Text("No appointments for this day.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+
+    @Composable
+    private fun AppointmentDetailsDialog(appointment: Appointment, onDismiss: () -> Unit) {
+        val fmt = remember { SimpleDateFormat("MMM dd, yyyy • hh:mm a", Locale.getDefault()) }
+        val start = remember(appointment.startMillis) { fmt.format(appointment.startMillis) }
+        val end = remember(appointment.endMillis) { fmt.format(appointment.endMillis) }
+
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(appointment.title.ifBlank { "Appointment" }) },
+            text = {
+                Column {
+                    Text("$start — $end", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (appointment.note.isNotBlank()) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(appointment.note)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text("Status: ${appointment.status}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        )
     }
 }

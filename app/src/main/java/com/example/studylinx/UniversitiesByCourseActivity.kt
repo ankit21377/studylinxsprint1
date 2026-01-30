@@ -1,3 +1,4 @@
+// File: com/example/studylinx/UniversitiesByCourseActivity.kt
 package com.example.studylinx
 
 import android.content.Intent
@@ -18,7 +19,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,7 +71,17 @@ class UniversitiesByCourseActivity : ComponentActivity() {
                         state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
                         }
+
                         state.error != null -> Text(state.error ?: "Error", color = Color.Red)
+
+                        state.list.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "No universities found for this course",
+                                color = Color(0xFF6A7786),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
                         else -> {
                             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 items(state.list, key = { it.id }) { uni ->
@@ -111,7 +121,12 @@ private fun UniversityCard(uni: University, onOpenLocation: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text("${uni.city}, ${uni.country}", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "${uni.city}, ${uni.country}",
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 if (uni.courses.isNotEmpty()) {
                     Text(
                         "Courses: ${uni.courses.take(3).joinToString()}",

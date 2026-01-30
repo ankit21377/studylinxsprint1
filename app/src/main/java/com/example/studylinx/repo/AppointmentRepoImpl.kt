@@ -1,63 +1,93 @@
+// File: com/example/studylinx/repo/AppointmentRepoImpl.kt
 package com.example.studylinx.repo
 
 import com.example.studylinx.model.Appointment
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
+import com.google.firebase.database.*
 
-class AppointmentRepoImpl(
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
-) : AppointmentRepo {
+class AppointmentRepoImpl : AppointmentRepo {
 
-    private fun col(userId: String) =
-        db.collection("users").document(userId).collection("appointments")
+    private val db: DatabaseReference = FirebaseDatabase.getInstance().reference
 
-    override fun streamAppointmentsInRange(
-        userId: String,
-        startMillisInclusive: Long,
-        endMillisExclusive: Long
-    ): Flow<List<Appointment>> = callbackFlow {
-        val reg = col(userId)
-            .whereGreaterThanOrEqualTo("startMillis", startMillisInclusive)
-            .whereLessThan("startMillis", endMillisExclusive)
-            .orderBy("startMillis", Query.Direction.ASCENDING)
-            .addSnapshotListener { snap, err ->
-                if (err != null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
+    private var activeRef: DatabaseReference? = null
+    private var activeListener: ValueEventListener? = null
 
-                val list = snap?.documents?.map { d ->
-                    Appointment(
-                        id = d.id,
-                        title = d.getString("title") ?: "",
-                        note = d.getString("note") ?: "",
-                        startMillis = d.getLong("startMillis") ?: 0L,
-                        endMillis = d.getLong("endMillis") ?: 0L,
-                        createdAt = d.getLong("createdAt") ?: 0L,
-                        updatedAt = d.getLong("updatedAt") ?: 0L
-                    )
-                }.orEmpty()
-
-                trySend(list)
-            }
-
-        awaitClose { reg.remove() }
+    private fun userAppointmentsRef(userId: String): DatabaseReference {
+        // Path: users/{uid}/appointments/{appointmentId}
+        return db.child("users").child(userId).child("appointments")
     }
 
-    override suspend fun addAppointment(userId: String, appointment: Appointment): String {
-        val now = System.currentTimeMillis()
-        val data = hashMapOf(
-            "title" to appointment.title,
-            "note" to appointment.note,
-            "startMillis" to appointment.startMillis,
-            "endMillis" to appointment.endMillis,
-            "createdAt" to now,
-            "updatedAt" to now
+    override fun observeAppointments(
+        userId: String,
+        onUpdate: (List<Appointment>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        if (userId.isBlank()) {
+            onError("UserId is blank")
+            return
+        }
+
+        // stop old
+        stop()
+
+        val ref = userAppointmentsRef(userId)
+
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = mutableListOf<Appointment>()
+                for (child in snapshot.children) {
+                    val ap = child.getValue(Appointment::class.java)
+                    if (ap != null) {
+                        val fixed = if (ap.id.isBlank()) ap.copy(id = child.key ?: "") else ap
+                        list.add(fixed)
+                    }
+                }
+                onUpdate(list)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                onError(error.message)
+            }
+        }
+
+        activeRef = ref
+        activeListener = listener
+        ref.addValueEventListener(listener)
+    }
+
+    override fun addAppointment(
+        userId: String,
+        appointment: Appointment,
+        onDone: (Boolean, String?) -> Unit
+    ) {
+        if (userId.isBlank()) {
+            onDone(false, "UserId is blank")
+            return
+        }
+
+        val ref = userAppointmentsRef(userId)
+        val newRef = ref.push()
+        val id = newRef.key ?: run {
+            onDone(false, "Could not generate appointment id")
+            return
+        }
+
+        val toSave = appointment.copy(
+            id = id,
+            userId = userId
         )
-        return col(userId).add(data).await().id
+
+        newRef.setValue(toSave)
+            .addOnSuccessListener { onDone(true, "Appointment added") }
+            .addOnFailureListener { e -> onDone(false, e.message ?: "Failed to add") }
+    }
+
+    override fun stop() {
+        val r = activeRef
+        val l = activeListener
+        if (r != null && l != null) {
+            r.removeEventListener(l)
+        }
+        activeRef = null
+        activeListener = null
     }
 }

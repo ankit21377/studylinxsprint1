@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,14 +54,14 @@ class UniversityActivity : ComponentActivity() {
                     vm = vm,
                     onBack = { finish() },
                     onOpenLocation = { url ->
-                        if (url.isNotBlank()) {
-                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                        }
+                        if (url.isNotBlank()) startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                     },
                     onUniversityClick = { uni ->
-                        val i = Intent(this, UniversityDetailsActivity::class.java)
-                        i.putExtra(EXTRA_UNI_ID, uni.id)
-                        startActivity(i)
+                        startActivity(
+                            Intent(this, UniversityDetailsActivity::class.java).apply {
+                                putExtra(EXTRA_UNI_ID, uni.id)
+                            }
+                        )
                     }
                 )
             }
@@ -80,9 +79,7 @@ private fun UniversityScreen(
 ) {
     val state by vm.state.collectAsState()
 
-    val bg = Brush.verticalGradient(
-        colors = listOf(Color(0xFF7EC7F5), Color(0xFFEAF4FF))
-    )
+    val bg = Brush.verticalGradient(colors = listOf(Color(0xFF7EC7F5), Color(0xFFEAF4FF)))
 
     Scaffold(
         topBar = {
@@ -131,15 +128,12 @@ private fun UniversityScreen(
                     state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
-
                     state.error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(state.error ?: "Error", color = Color.Red)
                     }
-
                     state.filtered.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("No universities found", color = Color(0xFF6A7786))
                     }
-
                     else -> {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
@@ -198,9 +192,7 @@ private fun UniversityCard(
                     overflow = TextOverflow.Ellipsis,
                     color = Color(0xFF0E2A47)
                 )
-
                 Spacer(Modifier.height(2.dp))
-
                 Text(
                     text = "${uni.city}, ${uni.country}",
                     fontSize = 12.sp,
@@ -208,9 +200,7 @@ private fun UniversityCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
                 Spacer(Modifier.height(5.dp))
-
                 Text(
                     text = uni.description,
                     fontSize = 11.sp,

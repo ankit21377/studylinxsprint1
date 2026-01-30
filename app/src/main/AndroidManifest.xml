@@ -36,6 +36,25 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".CoursesActivity"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".StartActivity"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".AppointmentActivity"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".AdminUniversityActivity"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".UniversitiesByCourseActivity"
+            android:exported="true" />
+        <activity
             android:name=".CountryActivity"
             android:exported="true"
             android:label="@string/title_activity_country"
