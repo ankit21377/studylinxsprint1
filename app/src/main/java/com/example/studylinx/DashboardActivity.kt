@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 
 // ✅ Move this OUTSIDE composable
@@ -46,10 +47,12 @@ fun DashboardBody() {
     var selectedIndex by remember { mutableStateOf(0) }
 
     Scaffold(
+        modifier = Modifier.testTag("dashboard"),
         bottomBar = {
             NavigationBar {
                 listItems.forEachIndexed { index, item ->
                     NavigationBarItem(
+                        modifier = Modifier.testTag("nav_${item.label.lowercase()}"),
                         icon = {
                             Icon(
                                 painter = painterResource(item.icon),

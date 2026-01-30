@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.studylinx.model.Country
 import com.example.studylinx.model.University
@@ -44,6 +45,7 @@ fun SearchScreen(
 
     Column(
         modifier = Modifier
+            .testTag("search_screen")
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(BgTop, BgBottom)))
     ) {

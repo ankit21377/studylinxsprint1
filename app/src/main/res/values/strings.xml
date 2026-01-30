@@ -7,5 +7,10 @@
     <string name="title_activity_document">DocumentActivity</string>
     <string name="title_activity_personal_details">PersonalDetailsActivity</string>
     <string name="title_activity_country">CountryActivity</string>
+<<<<<<< HEAD
     <string name="title_activity_admin_countries">AdminCountriesActivity</string>
+=======
+    <string name="title_activity_university_details">UniversityDetailsActivity</string>
+    <string name="title_activity_admin_notifications">AdminNotificationsActivity</string>
+>>>>>>> d9f98490fb90a52e6ad94f5c387d9ea07c8d9c3b
 </resources>

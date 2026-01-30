@@ -14,9 +14,26 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyLinX">
         <activity
+<<<<<<< HEAD
             android:name=".AdminCountriesActivity"
             android:exported="true"
             android:label="@string/title_activity_admin_countries"
+=======
+            android:name=".AdminNotificationsActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_notifications"
+            android:theme="@style/Theme.StudyLinX">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".UniversityDetailsActivity"
+            android:exported="true"
+            android:label="@string/title_activity_university_details"
+>>>>>>> d9f98490fb90a52e6ad94f5c387d9ea07c8d9c3b
             android:theme="@style/Theme.StudyLinX">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -47,6 +64,17 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".UniversityActivity"
+            android:exported="true"
+            android:label="UniversityActivity"
+            android:theme="@style/Theme.StudyLinX">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".DocumentActivity"
             android:exported="true"
             android:label="@string/title_activity_document"
@@ -66,6 +94,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true" />
         <activity
             android:name=".RegisterActivity"
             android:exported="true"
