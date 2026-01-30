@@ -42,6 +42,7 @@ android {
 }
 
 dependencies {
+
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     // Mockito
@@ -104,5 +105,15 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // Unit testing
+    testImplementation("junit:junit:4.13.2")
+// Mockito (core)
+    testImplementation("org.mockito:mockito-core:5.12.0")
+// Mockito Kotlin helpers (much nicer syntax)
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+// Allows mocking final classes in Kotlin if needed
+    testImplementation("org.mockito:mockito-inline:5.2.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 
 }
